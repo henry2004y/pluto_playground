@@ -8,7 +8,7 @@ using InteractiveUtils
 md"
 # Collision and the Raise of π
 
-## Problem Description
+## Problem description
 
 Imagine there are two blocks with mass M and m in an ideal system: all collisions are elastic, no resistive force. The M block has an initial velocity of u, while the m block has an initial velocity of 0. There is a wall on one side. What is the total number of collisions between the two blocks?
 
@@ -170,14 +170,14 @@ M/m     | n | N | difference to $\pi$
 "
 
 # ╔═╡ de1ef8dd-7f98-4063-8f5c-89746e96e1cd
-md"
+md"""
 ## Thinking in the phase space
 
 This is not the end of the story. Given the fact that $\pi$ arises from the solution, we should immediately think of any periodic motion in a circle. In this specific case,
 it is the phase space consists with x-axis being $x=\sqrt{M}u$, and y-axis being $y=\sqrt{m}v$. Then the conservation of energy means that a state of the system consists of two blocks must be sitting on a circle, and the conservation of momentum means that the state can only jump along a line with a given slope that depends on the mass ratio!
 
 See [the video of 3Blue1Brown](https://youtu.be/jsYwFizhncE?si=r27PS1C9-51PPA6W) for a detailed explanation.
-"
+"""
 
 # ╔═╡ Cell order:
 # ╟─bfa63490-6151-11ee-2f43-45656d4df512
@@ -185,4 +185,4 @@ See [the video of 3Blue1Brown](https://youtu.be/jsYwFizhncE?si=r27PS1C9-51PPA6W)
 # ╠═d37eea2a-5337-4ba9-98b8-e0f4bed3ca58
 # ╠═4d6b99e4-d374-4787-ac08-1a65a15f5619
 # ╟─dd888f9c-d997-4cec-978d-05979c5f8af5
-# ╠═de1ef8dd-7f98-4063-8f5c-89746e96e1cd
+# ╟─de1ef8dd-7f98-4063-8f5c-89746e96e1cd
