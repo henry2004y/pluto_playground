@@ -150,35 +150,33 @@ outvtu.TimeArray = 'None'
 
 # create a new 'Calculator'
 calculator1 = Calculator(registrationName='Calculator1', Input=outvtu)
-calculator1.Function = ''
-
-# Properties modified on calculator1
 calculator1.ResultArrayName = 'B'
 calculator1.Function = '"B_x [nT]"*iHat+"B_y [nT]"*jHat+"B_z [nT]"*kHat'
 
 # create a new 'Calculator'
 calculator2 = Calculator(registrationName='Calculator2', Input=calculator1)
-calculator2.Function = ''
-
-# Properties modified on calculator2
 calculator2.ResultArrayName = 'U'
 calculator2.Function = '"U_x [km/s]"*iHat+"U_y [km/s]"*jHat+"U_z [km/s]"*kHat'
 
 # create a new 'Calculator'
 calculator3 = Calculator(registrationName='Calculator3', Input=calculator2)
-calculator3.Function = ''
-
-# Properties modified on calculator3
 calculator3.ResultArrayName = 'J'
 calculator3.Function = '"J_x [`mA/m^2]"*iHat+"J_y [`mA/m^2]"*jHat+"J_z [`mA/m^2]"*kHat'
 
-# create a new 'Calculator'
+# create a new 'Calculator', assume average mass = 14 amu
 calculator4 = Calculator(registrationName='Calculator4', Input=calculator3)
-calculator4.Function = ''
-
-# Properties modified on calculator4, average mass = 14 amu
 calculator4.ResultArrayName = 'E'
 calculator4.Function = 'cross(B, U)*1e-6 + cross(J, B) * 14 / ("Rho [amu/cm^3]"*1.6)*1e1'
+
+# create a new 'Calculator'
+calculator5 = Calculator(registrationName='Calculator5', Input=calculator4)
+calculator5.ResultArrayName = 'Uth'
+calculator5.Function = 'sqrt("P [nPa]" / "Rho [amu/cm^3]" * 2/1.673557546)* 1e6'
+
+# create a new 'Calculator', assume average mass = 14 amu
+calculator6 = Calculator(registrationName='Calculator6', Input=calculator5)
+calculator6.ResultArrayName = 'n'
+calculator6.Function = '"Rho [amu/cm^3]" / 14'
 
 # create a new 'Resample To Image'
 resampleToImage1 = ResampleToImage(registrationName='ResampleToImage1', Input=calculator4)
@@ -188,7 +186,7 @@ resampleToImage1.SamplingDimensions = [100, 100, 100]
 
 # save data
 SaveData('test.vti', proxy=resampleToImage1, ChooseArraysToWrite=1,
-    PointDataArrays=['B', 'E', 'U', 'Rho [amu/cm^3]'])
+    PointDataArrays=['B', 'E', 'U', 'n', 'Uth'])
 ```
 
 4. Read the field info into Julia.
