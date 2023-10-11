@@ -176,9 +176,9 @@ calculator3.Function = '"J_x [`mA/m^2]"*iHat+"J_y [`mA/m^2]"*jHat+"J_z [`mA/m^2]
 calculator4 = Calculator(registrationName='Calculator4', Input=calculator3)
 calculator4.Function = ''
 
-# Properties modified on calculator4
+# Properties modified on calculator4, average mass = 14 amu
 calculator4.ResultArrayName = 'E'
-calculator4.Function = 'cross(B, U)*1e-6 + cross(J, B) / ("Rho [amu/cm^3]"*1.6)*1e1'
+calculator4.Function = 'cross(B, U)*1e-6 + cross(J, B) * 14 / ("Rho [amu/cm^3]"*1.6)*1e1'
 
 # create a new 'Resample To Image'
 resampleToImage1 = ResampleToImage(registrationName='ResampleToImage1', Input=calculator4)
@@ -188,7 +188,7 @@ resampleToImage1.SamplingDimensions = [100, 100, 100]
 
 # save data
 SaveData('test.vti', proxy=resampleToImage1, ChooseArraysToWrite=1,
-    PointDataArrays=['B', 'E'])
+    PointDataArrays=['B', 'E', 'U', 'Rho [amu/cm^3]'])
 ```
 
 4. Read the field info into Julia.
