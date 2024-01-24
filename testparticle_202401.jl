@@ -190,7 +190,7 @@ The classical Boris method is not a general ODE solver, but designed specificall
 param = prepare(E, B, species=Electron)
 paramBoris = BorisMethod(param)
 prob = TraceProblem(stateinit, tspan, dt, paramBoris)
-traj = trace_trajectory(prob; savestepinterval)
+sol = trace_trajectory(prob; savestepinterval)
 ```
 
 This method is 2nd order accurate in space. A fixed `dt` is required to conserve phase space volume, even though it is not a symplectic method ([Qin+ 2013](https://doi.org/10.1063/1.4818428)). It is the de facto algorithm for particle pusher after being proposed in the 1960s.
@@ -283,7 +283,7 @@ md"""
 
 # ╔═╡ b3e0e1b5-4f11-41b4-b2e3-fdb36c6c8b20
 md"""
-## Demo: Tracing Ions in MHD Turbulence
+## Demo: Tracing Particles in MHD Turbulence
 
 ```math
 \begin{aligned}
@@ -293,6 +293,80 @@ U_\mathrm{in-plane} &= 1 \\
 U_z &= 0 \\
 \end{aligned}
 ```
+
+Relativistic B-only tracing:
+
+```math
+\begin{aligned}
+\frac{\mathrm{d}\mathbf{u}}{\mathrm{d}t} &= \frac{q}{\gamma m c}\mathbf{u}\times\mathbf{B} \\
+\frac{\mathrm{d}\mathbf{r}}{\mathrm{d}t} &= \mathbf{u}
+\end{aligned}
+```
+
+Initial particle seeds:
+random location,
+$u = c$,
+pitch angle $\theta = \cos^{-1}(\mu_0),\,\text{where }\mu_0 = 0.1-0.7$,
+random azimuthal angle.
+
+The Lorentz equation in SI units is written as
+
+```math
+\frac{\mathrm{d}\mathbf{v}}{\mathrm{d}t} = \frac{q}{m}\left( \mathbf{v}\times\mathbf{B} + \mathbf{E} \right)
+```
+
+It can be normalized to 
+
+```math
+\frac{\mathrm{d}\mathbf{v}^\prime}{\mathrm{d}t^\prime} = \mathbf{v}^\prime\times\mathbf{B}^\prime + \mathbf{E}^\prime
+```
+
+with the following transformation
+
+```math
+\begin{aligned}
+\mathbf{v} &= \mathbf{v}^\prime V_0 \\
+\mathbf{x} &= \mathbf{x}^\prime l_0 \\
+t &= t^\prime t_0 \\
+\mathbf{B} &= \mathbf{B}^\prime B_0 \\
+\mathbf{E} &= \mathbf{E}^\prime E_0 = \mathbf{E}^\prime V_0 B_0
+\end{aligned}
+```
+
+where $V_0, l_0, t_0, B_0$ are prescribed parameters.
+
+After the normalization, we can think of everything in the dimensionless natural units. If the magnetic field is homogeneous and the initial perpendicular velocity is 1, then the gyroradius is 1. MHD solutions are also dimensionless by nature. For the turbulence EM fields, we know their values and the spatial range. To make them more easily understandable, we can convert from the dimensionless MHD to natural units via
+
+```math
+\begin{aligned}
+V_0 &= c \\
+l_0 &= 4 / nx \\
+t_0 &= l_0 / V_0 \\
+B_0 &= \mathrm{norm}(B)
+\end{aligned}
+```
+
+and
+
+```julia
+x = range(xmin, xmax, length=nx) / l₀ 
+y = range(ymin, ymax, length=ny) / l₀
+z = range(zmin, zmax, length=nz) / l₀
+B ./= B₀
+```
+
+### Scales in the System
+
+* Numerical dissipation scale
+* Injection scale
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.1_rL4.png"))
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.1_rL16.png"))
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.7_rL4.png"))
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.7_rL16.png"))
 
 """
 
@@ -902,9 +976,9 @@ uuid = "adafc99b-e345-5852-983c-f28acb93d879"
 version = "0.3.1"
 
 [[deps.DataAPI]]
-git-tree-sha1 = "8da84edb865b0b5b0100c0666a9bc9a0b71c553c"
+git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
 uuid = "9a962f9c-6df0-11e9-0e5d-c546b8b5ee8a"
-version = "1.15.0"
+version = "1.16.0"
 
 [[deps.DataStructures]]
 deps = ["Compat", "InteractiveUtils", "OrderedCollections"]
@@ -1078,9 +1152,9 @@ version = "4.4.4+1"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
-git-tree-sha1 = "ec22cbbcd01cba8f41eecd7d44aac1f23ee985e3"
+git-tree-sha1 = "4820348781ae578893311153d69049a93d05f39d"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.7.2"
+version = "1.8.0"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1594,10 +1668,10 @@ deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 
 [[deps.LinearAlgebraX]]
-deps = ["LinearAlgebra", "Mods", "Permutations", "Primes", "SimplePolynomials"]
-git-tree-sha1 = "1cb349a6a7656c2cbe2d288baabe863a208e46e3"
+deps = ["LinearAlgebra", "Mods", "Primes", "SimplePolynomials"]
+git-tree-sha1 = "d76cec8007ec123c2b681269d40f94b053473fcf"
 uuid = "9b3f67b0-2d00-526e-9884-9e4938f8fb88"
-version = "0.2.6"
+version = "0.2.7"
 
 [[deps.LinearSolve]]
 deps = ["ArrayInterface", "ConcreteStructs", "DocStringExtensions", "EnumX", "FastLapackInterface", "GPUArraysCore", "InteractiveUtils", "KLU", "Krylov", "Libdl", "LinearAlgebra", "MKL_jll", "PrecompileTools", "Preferences", "RecursiveFactorization", "Reexport", "SciMLBase", "SciMLOperators", "Setfield", "SparseArrays", "Sparspak", "StaticArraysCore", "UnPack"]
@@ -1803,10 +1877,10 @@ uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
 
 [[deps.NonlinearSolve]]
-deps = ["ADTypes", "ArrayInterface", "ConcreteStructs", "DiffEqBase", "EnumX", "FastBroadcast", "FastClosures", "FiniteDiff", "ForwardDiff", "LazyArrays", "LineSearches", "LinearAlgebra", "LinearSolve", "MaybeInplace", "PrecompileTools", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SciMLOperators", "SimpleNonlinearSolve", "SparseArrays", "SparseDiffTools", "StaticArrays", "UnPack"]
-git-tree-sha1 = "72b036b728461272ae1b1c3f7096cb4c319d8793"
+deps = ["ADTypes", "ArrayInterface", "ConcreteStructs", "DiffEqBase", "FastBroadcast", "FastClosures", "FiniteDiff", "ForwardDiff", "LazyArrays", "LineSearches", "LinearAlgebra", "LinearSolve", "MaybeInplace", "PrecompileTools", "Preferences", "Printf", "RecursiveArrayTools", "Reexport", "SciMLBase", "SimpleNonlinearSolve", "SparseArrays", "SparseDiffTools", "StaticArraysCore", "TimerOutputs"]
+git-tree-sha1 = "78bdd3a4a62865cf43c53d63783b0cbfddcdbbe6"
 uuid = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
-version = "3.4.0"
+version = "3.5.0"
 
     [deps.NonlinearSolve.extensions]
     NonlinearSolveBandedMatricesExt = "BandedMatrices"
@@ -1958,9 +2032,15 @@ version = "2.8.1"
 
 [[deps.Permutations]]
 deps = ["Combinatorics", "LinearAlgebra", "Random"]
-git-tree-sha1 = "c7745750b8a829bc6039b7f1f0981bcda526a946"
+git-tree-sha1 = "eb3f9df2457819bf0a9019bd93cc451697a0751e"
 uuid = "2ae35dd2-176d-5d53-8349-f30d82d94d4f"
-version = "0.4.19"
+version = "0.4.20"
+
+[[deps.PikaParser]]
+deps = ["DocStringExtensions"]
+git-tree-sha1 = "d6ff87de27ff3082131f31a714d25ab6d0a88abf"
+uuid = "3bbf5609-3e7b-44cd-8549-7c69f321e792"
+version = "0.6.1"
 
 [[deps.Pixman_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LLVMOpenMP_jll", "Libdl"]
@@ -2127,9 +2207,9 @@ version = "1.3.4"
 
 [[deps.RecursiveArrayTools]]
 deps = ["Adapt", "ArrayInterface", "DocStringExtensions", "GPUArraysCore", "IteratorInterfaceExtensions", "LinearAlgebra", "RecipesBase", "SparseArrays", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables"]
-git-tree-sha1 = "720e17f568661f7c1d9ce8df20c75b544b22e249"
+git-tree-sha1 = "dd7fc1923fde0cc6cdff451352d17924b0704ca1"
 uuid = "731186ca-8d62-57ce-b412-fbd966d074cd"
-version = "3.5.3"
+version = "3.5.4"
 
     [deps.RecursiveArrayTools.extensions]
     RecursiveArrayToolsFastBroadcastExt = "FastBroadcast"
@@ -2220,9 +2300,9 @@ version = "0.6.42"
 
 [[deps.SciMLBase]]
 deps = ["ADTypes", "ArrayInterface", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "EnumX", "FillArrays", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "PrecompileTools", "Preferences", "Printf", "RecipesBase", "RecursiveArrayTools", "Reexport", "RuntimeGeneratedFunctions", "SciMLOperators", "StaticArraysCore", "Statistics", "SymbolicIndexingInterface", "Tables", "TruncatedStacktraces"]
-git-tree-sha1 = "ad711463cb386572f33f6209464d8dca5a081247"
+git-tree-sha1 = "de41474ac529bf81598e064587421cc5ebc28fa0"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "2.19.0"
+version = "2.20.0"
 
     [deps.SciMLBase.extensions]
     SciMLBaseChainRulesCoreExt = "ChainRulesCore"
@@ -2355,17 +2435,19 @@ version = "1.10.0"
 
 [[deps.SparseDiffTools]]
 deps = ["ADTypes", "Adapt", "ArrayInterface", "Compat", "DataStructures", "FiniteDiff", "ForwardDiff", "Graphs", "LinearAlgebra", "PackageExtensionCompat", "Random", "Reexport", "SciMLOperators", "Setfield", "SparseArrays", "StaticArrayInterface", "StaticArrays", "Tricks", "UnPack", "VertexSafeGraphs"]
-git-tree-sha1 = "c281e11db4eacb36a292a054bac83c5a0aca2a26"
+git-tree-sha1 = "3b38ae7a1cbe9b8b1344359599753957644b03d4"
 uuid = "47a9eef4-7e08-11e9-0b38-333d64bd3804"
-version = "2.15.0"
+version = "2.16.0"
 
     [deps.SparseDiffTools.extensions]
     SparseDiffToolsEnzymeExt = "Enzyme"
+    SparseDiffToolsPolyesterForwardDiffExt = "PolyesterForwardDiff"
     SparseDiffToolsSymbolicsExt = "Symbolics"
     SparseDiffToolsZygoteExt = "Zygote"
 
     [deps.SparseDiffTools.weakdeps]
     Enzyme = "7da242da-08ed-463a-9acd-ee780be4f1d9"
+    PolyesterForwardDiff = "98d1487c-24ca-40b6-b7ab-df2af84e126b"
     Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
     Zygote = "e88e6eb3-aa80-5325-afca-941959d7151f"
 
@@ -2386,10 +2468,10 @@ weakdeps = ["ChainRulesCore"]
     SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
 
 [[deps.StableHashTraits]]
-deps = ["Compat", "SHA", "Tables", "TupleTools"]
-git-tree-sha1 = "6fc838a7713795681907a7e749d72d12a81a43ea"
+deps = ["Compat", "PikaParser", "SHA", "Tables", "TupleTools"]
+git-tree-sha1 = "662f56ffe22b3985f3be7474f0aecbaf214ecf0f"
 uuid = "c5dd0088-6c3f-4803-b00e-f31a60c170fa"
-version = "1.1.4"
+version = "1.1.6"
 
 [[deps.StackViews]]
 deps = ["OffsetArrays"]
@@ -2469,9 +2551,9 @@ version = "0.5.2"
 
 [[deps.StructArrays]]
 deps = ["Adapt", "ConstructionBase", "DataAPI", "GPUArraysCore", "StaticArraysCore", "Tables"]
-git-tree-sha1 = "0a3db38e4cce3c54fe7a71f831cd7b6194a54213"
+git-tree-sha1 = "1b0b1205a56dc288b71b1961d48e351520702e24"
 uuid = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
-version = "0.6.16"
+version = "0.6.17"
 
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
@@ -2546,6 +2628,12 @@ deps = ["ColorTypes", "DataStructures", "DocStringExtensions", "FileIO", "FixedP
 git-tree-sha1 = "34cc045dd0aaa59b8bbe86c644679bc57f1d5bd0"
 uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
 version = "0.6.8"
+
+[[deps.TimerOutputs]]
+deps = ["ExprTools", "Printf"]
+git-tree-sha1 = "f548a9e9c490030e545f72074a41edfd0e5bcdd7"
+uuid = "a759f4b9-e2f1-59dc-863e-4aeb61b1ea8f"
+version = "0.5.23"
 
 [[deps.TranscodingStreams]]
 git-tree-sha1 = "1fbeaaca45801b4ba17c251dd8603ef24801dd84"
@@ -2791,9 +2879,9 @@ version = "3.5.0+0"
 # ╟─e8daa564-73a1-4306-87ab-7334cb44f96d
 # ╠═e73e1a00-3706-42e1-acd1-ebc8b2b95c62
 # ╟─84dcadfc-4b85-48fc-b7a5-5bbc71d66b7f
-# ╠═b7244973-218a-4bb6-8a8f-95f84a8fb225
+# ╟─b7244973-218a-4bb6-8a8f-95f84a8fb225
 # ╟─db26a01b-b01c-41dc-b23a-02dbb3867655
-# ╠═b3e0e1b5-4f11-41b4-b2e3-fdb36c6c8b20
-# ╠═d8d1dc93-44e7-466f-93fe-a9b427368944
+# ╟─b3e0e1b5-4f11-41b4-b2e3-fdb36c6c8b20
+# ╟─d8d1dc93-44e7-466f-93fe-a9b427368944
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
