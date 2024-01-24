@@ -360,13 +360,13 @@ B ./= B₀
 * Numerical dissipation scale
 * Injection scale
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.1_rL4.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL4.png"))
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.1_rL16.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL16.png"))
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.7_rL4.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL4.png"))
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/figures/CR1_mu0.7_rL16.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL16.png"))
 
 """
 
