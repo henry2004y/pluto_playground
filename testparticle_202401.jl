@@ -371,19 +371,27 @@ md"""
 $\mu=0.1,r_L=4$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL4.png"))
+"""
 
+# ╔═╡ 85c0b164-b6e0-43f5-a458-939b4fd7ddde
+md"""
 $\mu=0.1,r_L=16$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL16.png"))
+"""
 
+# ╔═╡ 45b02635-24ef-4a95-adbd-f6fee4413f21
+md"""
 $\mu=0.7,r_L=4$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL4.png"))
+"""
 
-$\mu=0.1,r_L=16$
+# ╔═╡ 47fd7e19-9859-404e-a0e0-be356eef83b0
+md"""
+$\mu=0.7,r_L=16$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL16.png"))
-
 """
 
 # ╔═╡ d8d1dc93-44e7-466f-93fe-a9b427368944
@@ -2900,6 +2908,9 @@ version = "3.5.0+0"
 # ╟─b3e0e1b5-4f11-41b4-b2e3-fdb36c6c8b20
 # ╟─9c31a2c5-e0c7-4891-ad45-7a0e10012bd8
 # ╟─0906fe4a-8f2d-4e6d-8726-97bc493da577
+# ╟─85c0b164-b6e0-43f5-a458-939b4fd7ddde
+# ╟─45b02635-24ef-4a95-adbd-f6fee4413f21
+# ╟─47fd7e19-9859-404e-a0e0-be356eef83b0
 # ╟─d8d1dc93-44e7-466f-93fe-a9b427368944
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
