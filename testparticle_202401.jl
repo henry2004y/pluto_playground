@@ -294,6 +294,8 @@ U_z &= 0 \\
 \end{aligned}
 ```
 
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/turbulence_mhd_bx_cut.png"))
+
 Relativistic B-only tracing:
 
 ```math
@@ -360,11 +362,19 @@ B ./= B₀
 * Numerical dissipation scale
 * Injection scale
 
+$\mu=0.1,r_L=4$
+
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL4.png"))
+
+$\mu=0.1,r_L=16$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL16.png"))
 
+$\mu=0.7,r_L=4$
+
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL4.png"))
+
+$\mu=0.1,r_L=16$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL16.png"))
 
