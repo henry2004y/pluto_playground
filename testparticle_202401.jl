@@ -295,7 +295,10 @@ U_z &= 0 \\
 ```
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/turbulence_mhd_bx_cut.png"))
+"""
 
+# ╔═╡ 9c31a2c5-e0c7-4891-ad45-7a0e10012bd8
+md"""
 Relativistic B-only tracing:
 
 ```math
@@ -356,7 +359,10 @@ y = range(ymin, ymax, length=ny) / l₀
 z = range(zmin, zmax, length=nz) / l₀
 B ./= B₀
 ```
+"""
 
+# ╔═╡ 0906fe4a-8f2d-4e6d-8726-97bc493da577
+md"""
 ### Scales in the System
 
 * Numerical dissipation scale
@@ -2879,7 +2885,7 @@ version = "3.5.0+0"
 
 # ╔═╡ Cell order:
 # ╟─d50e4350-49ac-4203-870b-903a8801156e
-# ╠═bf6d18d0-ee99-4a2e-badb-c1f42071903b
+# ╟─bf6d18d0-ee99-4a2e-badb-c1f42071903b
 # ╟─d058eddf-a8b1-453b-a440-885a3da0a1a0
 # ╟─96a6b000-b558-11ee-1024-4d2ef81f5ad0
 # ╟─75936fde-d5a7-4920-a4ca-a626a2e90123
@@ -2892,6 +2898,8 @@ version = "3.5.0+0"
 # ╟─b7244973-218a-4bb6-8a8f-95f84a8fb225
 # ╟─db26a01b-b01c-41dc-b23a-02dbb3867655
 # ╟─b3e0e1b5-4f11-41b4-b2e3-fdb36c6c8b20
+# ╟─9c31a2c5-e0c7-4891-ad45-7a0e10012bd8
+# ╟─0906fe4a-8f2d-4e6d-8726-97bc493da577
 # ╟─d8d1dc93-44e7-466f-93fe-a9b427368944
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
