@@ -432,7 +432,10 @@ An important question is how to set seeds.
 * Energetic population: using observed differential flux, 10 logarithmic bins for sampling
 
 $(Resource("https://agupubs.onlinelibrary.wiley.com/cms/asset/818da498-ee6b-4e80-9136-46d032b32092/jgra54295-fig-0002-m.jpg"))
+"""
 
+# ╔═╡ 9643aa92-18fe-4850-a246-8ad134c085e8
+md"""
 > The surface flux is very sensitive to the seeding procedures. Placing a plane source in the upstream as in [Plainaki+ 2015, 2020] is deficient in capturing all the possible sources, which ends up in significantly underestimating ion sputtering.
 
 ### Stop Conditions
@@ -440,7 +443,6 @@ $(Resource("https://agupubs.onlinelibrary.wiley.com/cms/asset/818da498-ee6b-4e80
 * Hitting the surface: $r_\mathrm{final} < 1.07\, R_G$
 
 * Escaping from the outer boundary: $r_\mathrm{final} > 4\,R_G$
-
 """
 
 # ╔═╡ 081ce252-d083-4f03-a5bc-a4b171d222bc
@@ -468,6 +470,7 @@ This step is performed in ParaView with Python.
 
 * In some MHD models (e.g. [Jia+ 2009](https://doi.org/10.1029/2009JA014375)), there is an additional artificial resistivity.
 * In [Jia+ 2009](https://doi.org/10.1029/2009JA014375)'s MHD model, the energetic population's contribution is included in the pressure term. Whether or not self-consistency is maintained is to be debated.
+* E field near the inner boundary.
 
 """
 
@@ -475,6 +478,13 @@ This step is performed in ParaView with Python.
 md"""
 ### Preliminary Results
 
+* Thermal O+ population
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/impact_flux_G2_thermal_O_idealMHD.png"))
+
+* Energetic H+ population
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/impact_flux_G2_idealMHD_H_bin1-5-9.png"))
 
 """
 
@@ -1856,6 +1866,7 @@ version = "17.4.0+2"
 # ╟─47fd7e19-9859-404e-a0e0-be356eef83b0
 # ╟─d8d1dc93-44e7-466f-93fe-a9b427368944
 # ╟─72412346-af0c-49dc-8c0d-c5b4fe97429b
+# ╟─9643aa92-18fe-4850-a246-8ad134c085e8
 # ╟─081ce252-d083-4f03-a5bc-a4b171d222bc
 # ╟─05aee60b-fdb4-4856-a1cd-a0dbb470bbb3
 # ╟─00000000-0000-0000-0000-000000000001
