@@ -22,7 +22,7 @@ TableOfContents()
 md"""
 # TestParticle.jl: A New Tool for An Old Problem
 
-2024/01/17
+2024/01/31 Hongyang Zhou
 """
 
 # ╔═╡ 75936fde-d5a7-4920-a4ca-a626a2e90123
@@ -164,7 +164,7 @@ For example, the most commonly used solver in DifferentialEquations.jl, `Tsit5()
 
 | Scheme    | Energy difference ratio |  Time [ms] | Memory [MiB] | fixed time step |
 |-----------|-------------|---------|-----------|-----|
-| **Boris**     | 0%      | 0.2  | 0.043  | true |
+| **Boris**     | 0%      | 0.2  | 0.047  | true |
 | **ImplicitMidpoint**     | 0%      | 6.1  | 2.974  | true |
 | **SSPSDIRK2**  | 0%      |  11.7  | 4.090  | true |
 | Vern8   | 0.17%  | 0.9  |  1.707  |  false |
@@ -190,7 +190,7 @@ sol = trace_trajectory(prob; savestepinterval)
 
 This method is 2nd order accurate in space. A fixed `dt` is required to conserve phase space volume, even though it is not a symplectic method ([Qin+ 2013](https://doi.org/10.1063/1.4818428)). It is the de facto algorithm for particle pusher after being proposed in the 1960s. However, the phase error may still be an issue.
 
-### Implementation: Analytic or Numerical Fields？
+### Implementation: Analytic or Numerical Fields?
 
 - Analytic --> `Field(F)`
 - Numerical --> Needs interpolation
