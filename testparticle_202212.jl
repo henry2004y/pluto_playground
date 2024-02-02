@@ -8,10 +8,8 @@ using InteractiveUtils
 begin
     using TestParticle
     using TestParticle: get_gc, getB_dipole, getE_dipole, sph2cart, Rₑ
-    using TestParticleMakie
     using OrdinaryDiffEq
     using StaticArrays
-    using LinearAlgebra
     using PlutoUI
 end
 
