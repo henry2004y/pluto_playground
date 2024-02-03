@@ -367,6 +367,8 @@ y = range(ymin, ymax, length=ny) / l₀
 z = range(zmin, zmax, length=nz) / l₀
 B ./= B₀
 ```
+
+When the X extent is 1, then after the normalization, the x grid resolution becomes 1/4, which is a quarter of the gyroradius.
 """
 
 # ╔═╡ 0906fe4a-8f2d-4e6d-8726-97bc493da577
@@ -376,28 +378,28 @@ md"""
 * Numerical dissipation scale
 * Injection scale
 
-$\mu=0.1,r_L=4$
+$\mu=0.1,\,l_0=4/nx$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL4.png"))
 """
 
 # ╔═╡ 85c0b164-b6e0-43f5-a458-939b4fd7ddde
 md"""
-$\mu=0.1,r_L=16$
+$\mu=0.1,\,l_0=16/nx$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL16.png"))
 """
 
 # ╔═╡ 45b02635-24ef-4a95-adbd-f6fee4413f21
 md"""
-$\mu=0.7,r_L=4$
+$\mu=0.7,\,l_0=4/nx$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL4.png"))
 """
 
 # ╔═╡ 47fd7e19-9859-404e-a0e0-be356eef83b0
 md"""
-$\mu=0.7,r_L=16$
+$\mu=0.7,\,l_0=16/nx$
 
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL16.png"))
 """
