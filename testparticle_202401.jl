@@ -380,28 +380,28 @@ md"""
 
 $\mu=0.1,\,l_0=4/nx$
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL4.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_l4.png"))
 """
 
 # ╔═╡ 85c0b164-b6e0-43f5-a458-939b4fd7ddde
 md"""
 $\mu=0.1,\,l_0=16/nx$
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_rL16.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR3_mu0.1_l16.png"))
 """
 
 # ╔═╡ 45b02635-24ef-4a95-adbd-f6fee4413f21
 md"""
 $\mu=0.7,\,l_0=4/nx$
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL4.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_l4.png"))
 """
 
 # ╔═╡ 47fd7e19-9859-404e-a0e0-be356eef83b0
 md"""
 $\mu=0.7,\,l_0=16/nx$
 
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_rL16.png"))
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/CR1_mu0.7_l16.png"))
 """
 
 # ╔═╡ d8d1dc93-44e7-466f-93fe-a9b427368944
