@@ -183,9 +183,8 @@ The classical Boris method is not a general ODE solver, but designed specificall
 
 ```julia
 param = prepare(E, B, species=Electron)
-paramBoris = BorisMethod(param)
-prob = TraceProblem(stateinit, tspan, dt, paramBoris)
-sol = trace_trajectory(prob; savestepinterval)
+prob = TraceProblem(stateinit, tspan, param)
+sol = trace_trajectory(prob; dt, savestepinterval)
 ```
 
 This method is 2nd order accurate in space. A fixed `dt` is required to conserve phase space volume, even though it is not a symplectic method ([Qin+ 2013](https://doi.org/10.1063/1.4818428)). It is the de facto algorithm for particle pusher after being proposed in the 1960s. However, the phase error may still be an issue.
