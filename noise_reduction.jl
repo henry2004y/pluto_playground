@@ -11,6 +11,7 @@ begin
 	using Distributions
 	using DSP
 	using FFTW
+	using HypothesisTests
 	using PlutoPlotly
 	using PlutoUI
 end
@@ -40,7 +41,7 @@ begin
 	function generate_fake_signal()
 		rng = MersenneTwister(1234)
 		t = 0:100
-		noise = 0.5 .* randn(rng, length(t))
+		noise = 1.0 .* randn(rng, length(t))
 
 		T1 = 5.0     # period [s]
 		f1 = 1 / T1  # frequency [Hz]
@@ -98,9 +99,10 @@ begin
 end
 
 # ╔═╡ 7de4a2d8-e88d-4ed8-856c-7be58322aa6b
-plot(
-    scatter(x=t, y=y, mode="lines"),
-    Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Signal")
+plot([
+	scatter(x=t, y=y, name="raw"),
+	scatter(x=t, y=y_truth, name="real signal", line = attr(dash="dashdot"))],
+	Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Generated Signal")
 )
 
 # ╔═╡ f54f7a94-a68b-468d-b92e-fe47e69285f6
@@ -401,14 +403,32 @@ Criterion:
 """
 
 # ╔═╡ a111afa2-0039-4551-a26d-0f4f8e539de4
-md"""
-$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/density_estimate_KDEvsPIC.png"))
-"""
+Resource(
+	"https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/density_estimate_KDEvsPIC.png",
+	:alt => "KDE VS PIC in the Landau damping problem",
+	:width => 400
+)
 
 # ╔═╡ c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
 md"""
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/noise_reduction_shapefunction_kernelwidth.png"))
 """
+
+# ╔═╡ 43411086-a7e7-4001-ab11-c6c965ac5318
+let
+	# Sample data
+	data1 = rand(Uniform(0, 1), 50)  # 50 samples from a uniform (0, 1) distribution
+	data2 = randn(50)
+
+	# Perform the Anderson-Darling test
+	result = OneSampleADTest(data1, Uniform(0, 1)) 
+	println(result)
+
+	data2 = randn(50)
+	# Perform the Anderson-Darling test
+	result = OneSampleADTest(data2, Uniform(0, 1)) 
+	println(result)
+end
 
 # ╔═╡ 3099f6b6-dc46-46b6-b7a5-63907dfa32a4
 md"""
@@ -425,6 +445,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
 PlutoPlotly = "8e989ff0-3d88-8e9f-f020-2b208a939ff0"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -434,6 +455,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 DSP = "~0.7.9"
 Distributions = "~0.25.107"
 FFTW = "~1.8.0"
+HypothesisTests = "~0.11.0"
 PlutoPlotly = "~0.4.6"
 PlutoUI = "~0.7.58"
 """
@@ -444,27 +466,45 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "04e31178c49ef47686bcb61a4d6ce4f165dcdba6"
+project_hash = "272d89b741b31faefb632ea0c984190fa38055d9"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "d92ad398961a3ed262d8bf04a1a2b8340f915fef"
 uuid = "621f4979-c628-5d54-868e-fcf4e3e8185c"
 version = "1.5.0"
+weakdeps = ["ChainRulesCore", "Test"]
 
     [deps.AbstractFFTs.extensions]
     AbstractFFTsChainRulesCoreExt = "ChainRulesCore"
     AbstractFFTsTestExt = "Test"
-
-    [deps.AbstractFFTs.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [[deps.AbstractPlutoDingetjes]]
 deps = ["Pkg"]
 git-tree-sha1 = "0f748c81756f2e5e6854298f11ad8b2dfae6911a"
 uuid = "6e696c72-6542-2067-7265-42206c756150"
 version = "1.3.0"
+
+[[deps.Accessors]]
+deps = ["CompositionsBase", "ConstructionBase", "Dates", "InverseFunctions", "LinearAlgebra", "MacroTools", "Markdown", "Test"]
+git-tree-sha1 = "c0d491ef0b135fd7d63cbc6404286bc633329425"
+uuid = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+version = "0.1.36"
+
+    [deps.Accessors.extensions]
+    AccessorsAxisKeysExt = "AxisKeys"
+    AccessorsIntervalSetsExt = "IntervalSets"
+    AccessorsStaticArraysExt = "StaticArrays"
+    AccessorsStructArraysExt = "StructArrays"
+    AccessorsUnitfulExt = "Unitful"
+
+    [deps.Accessors.weakdeps]
+    AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
+    IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
+    Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+    StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+    Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
@@ -486,6 +526,16 @@ deps = ["LinearAlgebra"]
 git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
 uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 version = "0.5.1"
+
+[[deps.ChainRulesCore]]
+deps = ["Compat", "LinearAlgebra"]
+git-tree-sha1 = "575cd02e080939a33b6df6c5853d14924c08e35b"
+uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
+version = "1.23.0"
+weakdeps = ["SparseArrays"]
+
+    [deps.ChainRulesCore.extensions]
+    ChainRulesCoreSparseArraysExt = "SparseArrays"
 
 [[deps.ColorSchemes]]
 deps = ["ColorTypes", "ColorVectorSpace", "Colors", "FixedPointNumbers", "PrecompileTools", "Random"]
@@ -515,6 +565,16 @@ git-tree-sha1 = "fc08e5930ee9a4e03f84bfb5211cb54e7769758a"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.10"
 
+[[deps.Combinatorics]]
+git-tree-sha1 = "08c8b6831dc00bfea825826be0bc8336fc369860"
+uuid = "861a8166-3701-5b0c-9a16-15d98fcdc6aa"
+version = "1.0.2"
+
+[[deps.CommonSolve]]
+git-tree-sha1 = "0eee5eb66b1cf62cd6ad1b460238e60e4b09400c"
+uuid = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+version = "0.2.4"
+
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
 git-tree-sha1 = "c955881e3c981181362ae4088b35995446298b80"
@@ -529,6 +589,15 @@ weakdeps = ["Dates", "LinearAlgebra"]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "1.1.0+0"
+
+[[deps.CompositionsBase]]
+git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
+uuid = "a33af91c-f02d-484b-be07-31d278c5ca2b"
+version = "0.1.2"
+weakdeps = ["InverseFunctions"]
+
+    [deps.CompositionsBase.extensions]
+    CompositionsBaseInverseFunctionsExt = "InverseFunctions"
 
 [[deps.ConstructionBase]]
 deps = ["LinearAlgebra"]
@@ -659,6 +728,12 @@ git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
 uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 version = "0.9.5"
 
+[[deps.HypothesisTests]]
+deps = ["Combinatorics", "Distributions", "LinearAlgebra", "Printf", "Random", "Rmath", "Roots", "Statistics", "StatsAPI", "StatsBase"]
+git-tree-sha1 = "4b5d5ba51f5f473737ed9de6d8a7aa190ad8c72f"
+uuid = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
+version = "0.11.0"
+
 [[deps.IOCapture]]
 deps = ["Logging", "Random"]
 git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
@@ -674,6 +749,16 @@ version = "2024.0.2+0"
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
+
+[[deps.InverseFunctions]]
+deps = ["Test"]
+git-tree-sha1 = "896385798a8d49a255c398bd49162062e4a4c435"
+uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
+version = "0.1.13"
+weakdeps = ["Dates"]
+
+    [deps.InverseFunctions.extensions]
+    DatesExt = "Dates"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
@@ -952,6 +1037,24 @@ git-tree-sha1 = "6ed52fdd3382cf21947b15e8870ac0ddbff736da"
 uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
 version = "0.4.0+0"
 
+[[deps.Roots]]
+deps = ["Accessors", "ChainRulesCore", "CommonSolve", "Printf"]
+git-tree-sha1 = "1ab580704784260ee5f45bffac810b152922747b"
+uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
+version = "2.1.5"
+
+    [deps.Roots.extensions]
+    RootsForwardDiffExt = "ForwardDiff"
+    RootsIntervalRootFindingExt = "IntervalRootFinding"
+    RootsSymPyExt = "SymPy"
+    RootsSymPyPythonCallExt = "SymPyPythonCall"
+
+    [deps.Roots.weakdeps]
+    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+    IntervalRootFinding = "d2bf35a9-74e0-55ec-b149-d360ff49b807"
+    SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
+    SymPyPythonCall = "bc8888f7-b21e-4b7c-a06a-5d9c9496438c"
+
 [[deps.SHA]]
 uuid = "ea8e919c-243c-51af-8825-aaa63cd721ce"
 version = "0.7.0"
@@ -984,12 +1087,10 @@ deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_j
 git-tree-sha1 = "e2cfc4012a19088254b3950b85c3c1d8882d864d"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
 version = "2.3.1"
+weakdeps = ["ChainRulesCore"]
 
     [deps.SpecialFunctions.extensions]
     SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
-
-    [deps.SpecialFunctions.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
 
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
@@ -1018,14 +1119,11 @@ deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Re
 git-tree-sha1 = "cef0472124fab0695b58ca35a77c6fb942fdab8a"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "1.3.1"
+weakdeps = ["ChainRulesCore", "InverseFunctions"]
 
     [deps.StatsFuns.extensions]
     StatsFunsChainRulesCoreExt = "ChainRulesCore"
     StatsFunsInverseFunctionsExt = "InverseFunctions"
-
-    [deps.StatsFuns.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
@@ -1105,7 +1203,7 @@ version = "17.4.0+2"
 # ╟─23d012e7-3f1f-4205-892e-0a55c284a51f
 # ╠═729c180b-8f5b-49c5-b991-df081d05ccc7
 # ╠═7de4a2d8-e88d-4ed8-856c-7be58322aa6b
-# ╠═f54f7a94-a68b-468d-b92e-fe47e69285f6
+# ╟─f54f7a94-a68b-468d-b92e-fe47e69285f6
 # ╠═0ab781d9-e250-47f0-948f-e52d4207e385
 # ╠═fd7d0d0e-1943-4901-a303-a5774c4bcebc
 # ╠═8749dc10-c27b-46a6-b214-687a99c101a7
@@ -1117,8 +1215,9 @@ version = "17.4.0+2"
 # ╟─80da6802-0585-4fe8-9162-a6989bc48796
 # ╟─9ddb45a6-9318-4e33-8f69-f11e5ba9a158
 # ╟─c8b068ef-0c62-4ea7-bbea-1c15defcbecf
-# ╟─a111afa2-0039-4551-a26d-0f4f8e539de4
+# ╠═a111afa2-0039-4551-a26d-0f4f8e539de4
 # ╟─c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
+# ╠═43411086-a7e7-4001-ab11-c6c965ac5318
 # ╟─3099f6b6-dc46-46b6-b7a5-63907dfa32a4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
