@@ -12,6 +12,7 @@ begin
 	using DSP
 	using FFTW
 	using PlutoPlotly
+	using PlutoUI
 end
 
 # ╔═╡ 2ad61290-ec52-11ee-1ed4-bf2c121bd57f
@@ -39,7 +40,7 @@ begin
 	function generate_fake_signal()
 		rng = MersenneTwister(1234)
 		t = 0:100
-		noise = rand(rng, length(t))
+		noise = 0.5 .* randn(rng, length(t))
 
 		T1 = 5.0     # period [s]
 		f1 = 1 / T1  # frequency [Hz]
@@ -53,10 +54,11 @@ begin
 		T3 = 40.0    # period [s]
 		f3 = 1 / T3  # frequency [Hz]
 		y3 = @. sin(2π*f3*t)
-		
-		y = @. y1 + y2 .+ y3 .+ noise
 
-		t, y
+		y_truth = @. y1 + y2 .+ y3
+		y_noise = @. y_truth .+ noise
+
+		t, y_truth, y_noise
 	end
 
 	function moving_average(g::AbstractVector{<:AbstractFloat}, n::Int)
@@ -91,7 +93,7 @@ begin
 
 
 	fs = 1 # sampling frequency [Hz]
-	t, y = generate_fake_signal()
+	t, y_truth, y = generate_fake_signal()
 	N = length(t)
 end
 
@@ -124,6 +126,7 @@ let
 
 	plot([
 		scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
+		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=y_highpass, mode="lines", name="High-Pass")],
 		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="High-Pass Filtered Signal")
 	)
@@ -141,6 +144,7 @@ let
 
 	plot([
 		scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
+		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=y_lowpass, mode="lines", name="Low-Pass")], 
 		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Low-Pass Filtered Signal")
 	)
@@ -157,6 +161,7 @@ let
 
 	plot([
 		scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
+		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=y_bandpass, mode="lines", name="Band-Pass")],
 		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Band-Pass Filtered Signal")
 	)
@@ -170,6 +175,7 @@ let
 
 	plot([
 		scatter(x=t, y=y, name="raw", line=attr(color="black", dash="dot")),
+		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=ȳ3, mode="lines", name="nbox = 3"),
 		scatter(x=t, y=ȳ5, mode="lines", name="nbox = 5"),
 		scatter(x=t, y=ȳ10, mode="lines", name="nbox = 10")],
@@ -185,6 +191,7 @@ let
 
 	plot([
 		scatter(x=t, y=y, name="raw", line=attr(color="black", dash="dot")),
+		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=ȳ1, mode="lines", name="nIter = 1"),
 		scatter(x=t, y=ȳ10, mode="lines", name="nIter = 10"),
 		scatter(x=t, y=ȳ20, mode="lines", name="nIter = 20")],
@@ -208,13 +215,28 @@ Imagine you observe 6 particles at a location with velocities [9,12,10,55,62,50]
 ```math
 \hat{f}_h(x) = \frac{1}{n} \sum_{i=1}^n K_h(x - x_i)
 ```
-where n is the number of samples, ``K_h`` is the kernel centered at ``x_i`` with width h. The kernel can take any function that satifies some conditions. The common choices are:
+where n is the number of samples, ``K_h`` is the kernel centered at ``x_i`` with width h. The kernel can take any function that satifies three conditions:
+
+```math
+\begin{aligned}
+\int K(x) \mathrm{d}x &= 1 \\
+K(x) &= K(-x) \\
+\int x^2 K(x)\mathrm{d}x &< \infty
+\end{aligned}
+```
+
+The common choices are:
 
 - Gaussian
 - Uniform
 - Triangle
 
 As the number of samples n increases, the shape of the kernel function matters less; instead, the width h is the key parameter to find.
+
+Finding the optimal width is equivalent to the well-known *bias-variance trade-off problem* in statistics.
+
+- Larger h => smoother density estimation, larger **bias** error
+- Smaller h => spikier density estimation, larger **variance** error
 """
 
 # ╔═╡ 481b9a8c-c0ff-4e50-b0b3-46065558071a
@@ -238,7 +260,11 @@ end
 
 # ╔═╡ 80da6802-0585-4fe8-9162-a6989bc48796
 md"""
-As you can see from above, the width h matters a lot. How to pick a suitable width for our purpose?
+As you can see from above, the width h is a free parameter which exhibits a strong influence on the resulting estimate. How to pick a suitable width for our purpose?
+
+[Wiki: Bandwidth Selection](https://en.wikipedia.org/wiki/Kernel_density_estimation#Bandwidth_selection)
+
+### Error definition
 
 In statistics, we try to minimize the *Mean Integrated Squared Error (MISE)*:
 
@@ -246,16 +272,142 @@ In statistics, we try to minimize the *Mean Integrated Squared Error (MISE)*:
 \mathbb{E}\left[ \int_x (\hat{f}_h(x) - f(x))^2\mathrm{d}x \right]
 ```
 
+The expectation is taken on random variables ``\{X_i | i=1,...,n\}`` of observed distribution ``\hat{f}(x)``. MISE is essentially the sum of squared bias and variance at each point x,
+
+```math
+\mathrm{MISE} = \mathrm{bias}^2 + \mathrm{variance}
+```
+
+- bias: deviation of the estimated density from the true value, i.e. systematic error
+- variance: fluctuation of the density estimation, i.e. noise
+
+### Optimization problem
+
 ```math
 \frac{\partial}{\partial h}\mathrm{MISE}(h) = 0
 ```
 
-However, we don't know the true distribution f(x). How can we proceed?
+However, we don't know the true distribution f(x). How can we proceed? A variety of automatic, data-based methods have been developed to select the bandwidth:
 
-- Rules of thumb: assuming Gaussian distributions
-- Plug-in selector:
-- Cross-validation:
-- visual inspection:
+- Rules-of-thumb selector: If Gaussian basis functions are used to approximate univariate data, and the underlying density being estimated is Gaussian, the optimal choice for h is given by Silverman
+
+```math
+h = \left( \frac{4\hat{\sigma}^5}{3n} \right)^{1/5} \approx 1.06 \hat{\sigma}n^{-1/5}
+```
+where $\hat{\sigma}$ is the std of samples.
+
+- Plug-in selector: an iterative process which requires ``f^{\prime\prime}``
+
+- Visual inspection: brute force
+"""
+
+# ╔═╡ 9ddb45a6-9318-4e33-8f69-f11e5ba9a158
+md"""
+### Cross-validation (CV) selector
+
+```math
+\begin{aligned}
+\mathrm{MISE} &= \mathbb{E}\left[ \int_x (\hat{f}_h(x) - f(x))^2\mathrm{d}x \right] \\
+&= \mathbb{E}\int \hat{f}(x)^2\mathrm{d}x - 2\mathbb{E}\int\hat{f}(x)f(x)\mathrm{d}x + \int f(x)^2\mathrm{d}x
+\end{aligned}
+```
+
+- 1st term: direct compute
+- 3rd term: constant, independent of h
+- 2nd term: involves unknown f, ``\int \hat{f}f\mathrm{d}x =\mathbb{E}[\hat{f}(x)]``
+  - ``\sum_{i=1}^{n}\hat{f}(X_i)/n``  =>  ``h = 0``, not good!
+  - Leave-one-out strategy
+  - Jackknife resampling
+
+```math
+\hat{\mathbb{E}}_X\left[ \hat{f}(X) \right] = \frac{1}{n}\sum_{i=1}^n \hat{f}_{-i}(X_i)
+```
+where
+```math
+\hat{f}_{-i}(X_i) = \frac{1}{(n-1)h}\sum_{j\neq i, j=1}^n K\left( \frac{X_i - X_j}{h} \right)
+```
+is the *leave-one-out* estimator.
+
+The CV function of kernel width h is calculated by
+
+```math
+\begin{aligned}
+\mathrm{CV}(h) &= \int \hat{f}(x)^2\mathrm{d}x - 2\mathbb{E}\int\hat{f}(x)f(x)\mathrm{d}x \\
+&= \frac{1}{n^2h^2}\sum_{i=1}^n \sum_{j=1}^n \int K\left( \frac{X_i - x}{h} \right)\, K\left( \frac{X_j - x}{h} \right)\mathrm{d}x \\
+& -\frac{2}{n}\sum_{i=1}^n \left[ \frac{1}{(n-1)h}\sum_{j\neq i, j=1}^n K\left( \frac{X_i - X_j}{h} \right) \right] \\
+&= \frac{1}{n^2h^2}\sum_{i=1}^n \sum_{j=1}^n \bar{K}\left( \frac{X_i - X_j}{h} \right) \\
+& - \frac{2}{n(n-1)h}\sum_{i=1}^n\sum_{j\neq i, j=1}^n K\left( \frac{X_i - X_j}{h} \right)
+\end{aligned}
+```
+where ``\bar{K}(x) = \int K(x-t)K(t)\mathrm{d}t`` is a convolution.
+
+The CV function is then used to estimate ``\hat{h}`` that minimize it.
+"""
+
+# ╔═╡ c8b068ef-0c62-4ea7-bbea-1c15defcbecf
+md"""
+
+## PIC Noise Reduction Techniques
+
+- High-order shape functions
+- Kernel width optimization
+- Adaptive width adjustment
+
+### High-order shape functions
+
+FLEKS use a uniform box shape function. High-order (>2) shape functions can mitigate the noise effect.
+
+### Kernel width optimization
+
+```math
+\hat{f}_h(x) = \frac{1}{nh} \sum_{i=1}^n K(\frac{x - x_i}{h})
+```
+
+- Larger width h => lower and flatter shape function
+- Smaller width h => higher and narrower shape function
+
+### Adaptive width adjustment
+
+If the density has sharp peaks or narrow valleys, it is more likely that the density estimator that minimizes the mean and integrated error will *cut the peaks and fill the valleys*.
+
+If the bandwidth is not held fixed, but is varied depending upon the location of either the estimate (balloon estimator) or the samples (pointwise estimator), this produces a particularly powerful method termed adaptive or variable bandwidth kernel density estimation.
+
+- Priori density distribution of the CV-optimal width
+- Shrinks the widths where the density is high.
+- Enlarges the widths where the density is low.
+
+Algorithm:
+
+1. Find a pilot estimate ``\tilde{f}(x)`` by minimizing the CV function.
+2. Define local wdith factor ``\lambda_i`` by
+
+```math
+\lambda_i = \left( \frac{f(X_i)}{g} \right)^{-\alpha}
+```
+where ``g`` is the geometric mean of ``\tilde{f}``, i.e.
+
+```math
+\log(g) = \frac{1}{n}\sum \log\left( \tilde{f}(X_i) \right)
+```
+and ``\alpha`` is a sensitive factor, which is usually set to 0.5. Larger ``\alpha`` corresponds to more sensitive dependence of the corrected density on the prior density, rather than the samples.
+
+### When to apply the adjustment
+
+- Density estimation is not cheap.
+- When the distribution is close to uniform, the optimal width -> ``\infty``, so we shouldn't even perform the estimation!
+
+Criterion:
+- Anderson-Darling test, to tell whether or not samples obey uniform distribution.
+"""
+
+# ╔═╡ a111afa2-0039-4551-a26d-0f4f8e539de4
+md"""
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/density_estimate_KDEvsPIC.png"))
+"""
+
+# ╔═╡ c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
+md"""
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/noise_reduction_shapefunction_kernelwidth.png"))
 """
 
 # ╔═╡ 3099f6b6-dc46-46b6-b7a5-63907dfa32a4
@@ -263,6 +415,8 @@ md"""
 ## Using Diffusion to Detect PIC Noise
 
 Let us think of a simple scenario. We are trying to represent a Maxwellian distribution in a PIC cell by sampling 10 points. If we keep increasing the number of samples, we can approximate the Maxwellian distribution. The goal is to learn the mapping from few particles to many particles to better approximate the physical distributions.
+
+State-of-the-art!
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -272,6 +426,7 @@ DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 PlutoPlotly = "8e989ff0-3d88-8e9f-f020-2b208a939ff0"
+PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
@@ -280,6 +435,7 @@ DSP = "~0.7.9"
 Distributions = "~0.25.107"
 FFTW = "~1.8.0"
 PlutoPlotly = "~0.4.6"
+PlutoUI = "~0.7.58"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -288,7 +444,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "6da3028fb16dd2ab765ebd7299df8194c4e38590"
+project_hash = "04e31178c49ef47686bcb61a4d6ce4f165dcdba6"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -491,11 +647,23 @@ git-tree-sha1 = "f218fe3736ddf977e0e772bc9a586b2383da2685"
 uuid = "34004b35-14d8-5ef3-9330-4cdb6864b03a"
 version = "0.3.23"
 
+[[deps.Hyperscript]]
+deps = ["Test"]
+git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
+uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
+version = "0.0.5"
+
 [[deps.HypertextLiteral]]
 deps = ["Tricks"]
 git-tree-sha1 = "7134810b1afce04bbc1045ca1985fbe81ce17653"
 uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 version = "0.9.5"
+
+[[deps.IOCapture]]
+deps = ["Logging", "Random"]
+git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
+uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
+version = "0.2.4"
 
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -587,6 +755,11 @@ version = "0.3.27"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
+
+[[deps.MIMEs]]
+git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "0.1.4"
 
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl"]
@@ -695,6 +868,12 @@ version = "0.4.6"
     [deps.PlutoPlotly.weakdeps]
     PlotlyKaleido = "f2990250-8cf9-495f-b13a-cce12b45703c"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
+
+[[deps.PlutoUI]]
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "71a22244e352aa8c5f0f2adde4150f62368a3f2e"
+uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+version = "0.7.58"
 
 [[deps.Polynomials]]
 deps = ["LinearAlgebra", "RecipesBase", "Setfield", "SparseArrays"]
@@ -873,10 +1052,19 @@ git-tree-sha1 = "1feb45f88d133a655e001435632f019a9a1bcdb6"
 uuid = "62fd8b95-f654-4bbd-a8a5-9c27f68ccd50"
 version = "0.1.1"
 
+[[deps.Test]]
+deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
+uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
 [[deps.Tricks]]
 git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
 version = "0.1.8"
+
+[[deps.URIs]]
+git-tree-sha1 = "67db6cc7b3821e19ebe75791a9dd19c9b1188f2b"
+uuid = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
+version = "1.5.1"
 
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
@@ -927,6 +1115,10 @@ version = "17.4.0+2"
 # ╟─f7f6d21b-e830-49e3-8605-2da8ba082cb7
 # ╠═481b9a8c-c0ff-4e50-b0b3-46065558071a
 # ╟─80da6802-0585-4fe8-9162-a6989bc48796
+# ╟─9ddb45a6-9318-4e33-8f69-f11e5ba9a158
+# ╟─c8b068ef-0c62-4ea7-bbea-1c15defcbecf
+# ╟─a111afa2-0039-4551-a26d-0f4f8e539de4
+# ╟─c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
 # ╟─3099f6b6-dc46-46b6-b7a5-63907dfa32a4
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
