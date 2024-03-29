@@ -10,11 +10,17 @@ begin
 	using Statistics
 	using Distributions
 	using DSP
-	using FFTW
+	using ImageFiltering
+	#using KernelDensity
 	using HypothesisTests
+	using JLD2
+	using Downloads
 	using PlutoPlotly
 	using PlutoUI
 end
+
+# ╔═╡ 29d3056e-731e-4320-8e4e-aab6b4b6c334
+html"<button onclick='present()'>present</button>"
 
 # ╔═╡ 2ad61290-ec52-11ee-1ed4-bf2c121bd57f
 md"""
@@ -22,6 +28,9 @@ md"""
 
 Hongyang Zhou, 2024/03/27
 """
+
+# ╔═╡ 9341d824-70b2-4f2c-b706-33762fa3439f
+TableOfContents()
 
 # ╔═╡ 23d012e7-3f1f-4205-892e-0a55c284a51f
 md"""
@@ -114,6 +123,18 @@ md"""
 - Band-Pass
 - Moving box average
 - Neighbor average
+- Median
+
+For linear filtering with a finite-impulse response (FIT) filtering, one can either choose a direct algorithm or one based on the FFT. By default, this choice is made based on kernel size:
+- small kernel -> direct
+- large kernel -> FFT.
+"""
+
+# ╔═╡ 0d1dd973-7e64-472e-8885-f005532d88f8
+md"""
+### High-Pass Filter
+
+High-Pass filter removes the low frequency signals.
 """
 
 # ╔═╡ 0ab781d9-e250-47f0-948f-e52d4207e385
@@ -134,6 +155,13 @@ let
 	)
 end
 
+# ╔═╡ c0ab2098-0304-46cc-a2d9-af756b4a703e
+md"""
+### Low-Pass Filter
+
+Low-Pass filter removes the high frequency signals.
+"""
+
 # ╔═╡ fd7d0d0e-1943-4901-a303-a5774c4bcebc
 let
 	Tcut = 30
@@ -152,6 +180,13 @@ let
 	)
 end
 
+# ╔═╡ 8971fa73-a6a7-46b9-8209-fbaa779ae53e
+md"""
+### Band-Pass Filter
+
+Band-Pass filter maintains the signal within a specified lower-bound and upper-bound.
+"""
+
 # ╔═╡ 8749dc10-c27b-46a6-b214-687a99c101a7
 let
 	fl, fh = 1/30, 1/10  # cutoff frequencies [Hz]
@@ -169,6 +204,13 @@ let
 	)
 end
 
+# ╔═╡ 34fb35c4-d8d7-4ddd-8b81-d58ced94dc94
+md"""
+### Moving-Average Filter
+
+The Moving-Average filter averages over a selected number of neighboring points. This does not fit our problem quite well because large stencils require more communications in parallel processing.
+"""
+
 # ╔═╡ 97a1f4c0-570e-4035-a028-ec76f61d316f
 let
 	ȳ3 = moving_average(y, 3)
@@ -181,9 +223,16 @@ let
     	scatter(x=t, y=ȳ3, mode="lines", name="nbox = 3"),
 		scatter(x=t, y=ȳ5, mode="lines", name="nbox = 5"),
 		scatter(x=t, y=ȳ10, mode="lines", name="nbox = 10")],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Moving Box Averaged Signal")
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Moving Averaged Signal")
 	)
 end
+
+# ╔═╡ 1afa04fc-ebb8-4d5d-9489-dc8b24e8fb06
+md"""
+### Neighbor-Averaged Filter
+
+The Neighbor-Averaged filter is the one currently used in FLEKS.
+"""
 
 # ╔═╡ e588c06c-6dcc-48d1-bb68-221c19575ca8
 let
@@ -201,12 +250,45 @@ let
 	)
 end
 
-# ╔═╡ 47adebc5-306e-4d4a-a2b2-0c9dbd164914
+# ╔═╡ 61e41c96-be12-450e-800a-81660bed8ce9
 md"""
-## Modern Filters
+### Filtering Packages
 
-- Kalman Filter
+There are already available packages in the community for filtering.
+
+- [ImageFiltering](https://juliaimages.org/ImageFiltering.jl/stable/)
+- [HampelOutliers](https://github.com/tobydriscoll/HampelOutliers.jl)
 """
+
+# ╔═╡ 17dfe390-334e-4491-98fb-07ec499540cd
+let
+	k1 = centered([1/3, 1/3, 1/3])
+	ȳ1 = imfilter(y, k1);
+
+	plot([
+		scatter(x=t, y=y, name="raw", line=attr(color="black", dash="dot")),
+		#scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
+    	scatter(x=t, y=ȳ1, mode="lines", name="nbox = 1"),
+		],
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Neighbor-Averaged Signal Using ImageFiltering")
+	)
+end
+
+# ╔═╡ cc942948-1a4c-4525-9178-6f68867854e0
+let
+	patch_size = (3,)
+	ȳ1 = mapwindow(median, y, patch_size)
+	patch_size = (9,)
+	ȳ2 = mapwindow(median, y, patch_size)
+
+	plot([
+		scatter(x=t, y=y, name="raw", mode="lines", line=attr(color="black", dash="dashdot")),
+    	scatter(x=t, y=ȳ1, mode="lines", name="npoint = 3"),
+		scatter(x=t, y=ȳ2, mode="lines", name="npoint = 9"),
+		],
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Median-Filtered Signal Using ImageFiltering")
+	)
+end
 
 # ╔═╡ f7f6d21b-e830-49e3-8605-2da8ba082cb7
 md"""
@@ -430,6 +512,74 @@ let
 	println(result)
 end
 
+# ╔═╡ 28814af7-1081-4a91-93c8-fca4387c372d
+md"""
+## Noise in FLEKS
+"""
+
+# ╔═╡ c44a92d5-593b-49b9-a2d1-99b64c40f8be
+begin
+	filedir = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/data/"
+	filename = "EM_1Dfreestream_30deg_dx12km_3snapshots.jld2"
+	data = load(joinpath(filedir, filename))
+end
+
+# ╔═╡ b2feb585-fb09-4970-813f-f61781987bb3
+let
+	x = data["x"]
+	by = data["By"]
+	rhos0 = data["rhos0"]
+	rhos1 = data["rhos1"]
+	uxs0 = data["uxs0"]
+
+	p1 = @views plot(
+		scatter(;x, y=by[:,1], mode="lines", name="step 1"),
+    	Layout(yaxis_title="By")
+	)
+
+	p2 = @views plot(
+    	scatter(;x, y=rhos0[:,1], mode="lines", name="step 1"),
+    	Layout(yaxis_title="rhos0")
+	)
+
+	p3 = @views plot(
+    	scatter(;x, y=rhos1[:,1], mode="lines", name="step 1"),
+    	Layout(yaxis_title="rhos1")
+	)
+
+	p4 = @views plot(
+    	scatter(;x, y=uxs0[:,1], mode="lines", name="step 1"),
+    	Layout(yaxis_title="uxs0", xaxis_title="x")
+	)
+	
+	
+	p = [p1; p2; p3; p4]
+end
+
+# ╔═╡ 7faaab10-312b-44ba-85bd-7e847d268817
+let
+	x = data["x"]
+	rhos1 = @view data["rhos1"][:,1]
+	rhos1_smooth10 = neighbor_average(rhos1, 1; iterations=10)
+	rhos1_smooth50 = neighbor_average(rhos1, 1; iterations=50)
+
+	plot([
+		scatter(x=x[1:8:end], y=rhos1[1:8:end], name="raw", mode="markers", marker_size=1),
+    	scatter(x=x, y=rhos1_smooth10, mode="lines", name="niter = 10"),
+		scatter(x=x, y=rhos1_smooth50, mode="lines", name="niter = 50"),
+		],
+		Layout(yaxis_title="rhos1", xaxis_title="x [km]", title="Neighbor-Averaged Density")
+	)
+end
+
+# ╔═╡ 803d9973-2a67-4cb0-af4b-c69d7e4779e1
+let
+	rhos1 = @view data["rhos1"][:,1]
+	# Perform the Anderson-Darling test
+	result = OneSampleADTest(rhos1, Uniform(0.98, 1.005)) 
+	println(result)
+end
+
 # ╔═╡ 3099f6b6-dc46-46b6-b7a5-63907dfa32a4
 md"""
 ## Using Diffusion to Detect PIC Noise
@@ -439,13 +589,24 @@ Let us think of a simple scenario. We are trying to represent a Maxwellian distr
 State-of-the-art!
 """
 
+# ╔═╡ b37b081e-85a4-4b69-b544-de0adeb65e16
+md"""
+## Modern Filters
+
+- Kalman Filter
+
+Kalman filter requires prior knowledge of states, so it does not fit our purpose well.
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
 HypothesisTests = "09f84164-cd44-5f33-b23f-e6b0d136a0d5"
+ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
 PlutoPlotly = "8e989ff0-3d88-8e9f-f020-2b208a939ff0"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
@@ -454,8 +615,9 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 [compat]
 DSP = "~0.7.9"
 Distributions = "~0.25.107"
-FFTW = "~1.8.0"
 HypothesisTests = "~0.11.0"
+ImageFiltering = "~0.7.8"
+JLD2 = "~0.4.46"
 PlutoPlotly = "~0.4.6"
 PlutoUI = "~0.7.58"
 """
@@ -466,7 +628,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.10.2"
 manifest_format = "2.0"
-project_hash = "272d89b741b31faefb632ea0c984190fa38055d9"
+project_hash = "c08c80c3b6a9622034655e0b5539528b8d625c41"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -506,9 +668,45 @@ version = "0.1.36"
     StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
+[[deps.Adapt]]
+deps = ["LinearAlgebra", "Requires"]
+git-tree-sha1 = "6a55b747d1812e699320963ffde36f1ebdda4099"
+uuid = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
+version = "4.0.4"
+weakdeps = ["StaticArrays"]
+
+    [deps.Adapt.extensions]
+    AdaptStaticArraysExt = "StaticArrays"
+
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 version = "1.1.1"
+
+[[deps.ArrayInterface]]
+deps = ["Adapt", "LinearAlgebra", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "44691067188f6bd1b2289552a23e4b7572f4528d"
+uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
+version = "7.9.0"
+
+    [deps.ArrayInterface.extensions]
+    ArrayInterfaceBandedMatricesExt = "BandedMatrices"
+    ArrayInterfaceBlockBandedMatricesExt = "BlockBandedMatrices"
+    ArrayInterfaceCUDAExt = "CUDA"
+    ArrayInterfaceChainRulesExt = "ChainRules"
+    ArrayInterfaceGPUArraysCoreExt = "GPUArraysCore"
+    ArrayInterfaceReverseDiffExt = "ReverseDiff"
+    ArrayInterfaceStaticArraysCoreExt = "StaticArraysCore"
+    ArrayInterfaceTrackerExt = "Tracker"
+
+    [deps.ArrayInterface.weakdeps]
+    BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
+    BlockBandedMatrices = "ffab5731-97b5-5995-9138-79e8c1846df0"
+    CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+    ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
+    GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
+    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
+    StaticArraysCore = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
+    Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -526,6 +724,12 @@ deps = ["LinearAlgebra"]
 git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
 uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 version = "0.5.1"
+
+[[deps.CatIndices]]
+deps = ["CustomUnitRanges", "OffsetArrays"]
+git-tree-sha1 = "a0f80a09780eed9b1d106a1bf62041c2efc995bc"
+uuid = "aafaddc9-749c-510e-ac4f-586e18779b91"
+version = "0.2.2"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
@@ -599,6 +803,11 @@ weakdeps = ["InverseFunctions"]
     [deps.CompositionsBase.extensions]
     CompositionsBaseInverseFunctionsExt = "InverseFunctions"
 
+[[deps.ComputationalResources]]
+git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
+uuid = "ed09eef8-17a6-5b46-8889-db040fac31e3"
+version = "0.3.2"
+
 [[deps.ConstructionBase]]
 deps = ["LinearAlgebra"]
 git-tree-sha1 = "260fd2400ed2dab602a7c15cf10c1933c59930a2"
@@ -612,6 +821,11 @@ version = "1.5.5"
     [deps.ConstructionBase.weakdeps]
     IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
     StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[[deps.CustomUnitRanges]]
+git-tree-sha1 = "1a3f97f907e6dd8983b744d2642651bb162a3f7a"
+uuid = "dc8bdbbb-1ca9-579f-8c36-e416f6a65cce"
+version = "1.0.2"
 
 [[deps.DSP]]
 deps = ["Compat", "FFTW", "IterTools", "LinearAlgebra", "Polynomials", "Random", "Reexport", "SpecialFunctions", "Statistics"]
@@ -673,6 +887,12 @@ git-tree-sha1 = "5837a837389fccf076445fce071c8ddaea35a566"
 uuid = "fa6b7ba4-c1ee-5f82-b5fc-ecf0adba8f74"
 version = "0.6.8"
 
+[[deps.FFTViews]]
+deps = ["CustomUnitRanges", "FFTW"]
+git-tree-sha1 = "cbdf14d1e8c7c8aacbe8b19862e0179fd08321c2"
+uuid = "4f61f5a4-77b1-5117-aa51-3ab5ef4ef0cd"
+version = "0.3.2"
+
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
 git-tree-sha1 = "4820348781ae578893311153d69049a93d05f39d"
@@ -684,6 +904,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "c6033cc3892d0ef5bb9cd29b7f2f0331ea5184ea"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
 version = "3.3.10+0"
+
+[[deps.FileIO]]
+deps = ["Pkg", "Requires", "UUIDs"]
+git-tree-sha1 = "82d8afa92ecf4b52d78d869f038ebfb881267322"
+uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
+version = "1.16.3"
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
@@ -740,6 +966,29 @@ git-tree-sha1 = "8b72179abc660bfab5e28472e019392b97d0985c"
 uuid = "b5f81e59-6552-4d32-b1f0-c071b021bf89"
 version = "0.2.4"
 
+[[deps.IfElse]]
+git-tree-sha1 = "debdd00ffef04665ccbb3e150747a77560e8fad1"
+uuid = "615f187c-cbe4-4ef1-ba3b-2fcf58d6d173"
+version = "0.1.1"
+
+[[deps.ImageBase]]
+deps = ["ImageCore", "Reexport"]
+git-tree-sha1 = "eb49b82c172811fd2c86759fa0553a2221feb909"
+uuid = "c817782e-172a-44cc-b673-b171935fbb9e"
+version = "0.1.7"
+
+[[deps.ImageCore]]
+deps = ["ColorVectorSpace", "Colors", "FixedPointNumbers", "MappedArrays", "MosaicViews", "OffsetArrays", "PaddedViews", "PrecompileTools", "Reexport"]
+git-tree-sha1 = "b2a7eaa169c13f5bcae8131a83bc30eff8f71be0"
+uuid = "a09fc81d-aa75-5fe9-8630-4744c3626534"
+version = "0.10.2"
+
+[[deps.ImageFiltering]]
+deps = ["CatIndices", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "ImageBase", "ImageCore", "LinearAlgebra", "OffsetArrays", "PrecompileTools", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "TiledIteration"]
+git-tree-sha1 = "432ae2b430a18c58eb7eca9ef8d0f2db90bc749c"
+uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
+version = "0.7.8"
+
 [[deps.IntelOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "5fdf2fe6724d8caabf43b557b84ce53f3b7e2f6b"
@@ -769,6 +1018,12 @@ version = "0.2.2"
 git-tree-sha1 = "42d5f897009e7ff2cf88db414a389e5ed1bdd023"
 uuid = "c8e1da08-722c-5040-9ed9-7db0dc04731e"
 version = "1.10.0"
+
+[[deps.JLD2]]
+deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "Pkg", "PrecompileTools", "Printf", "Reexport", "Requires", "TranscodingStreams", "UUIDs"]
+git-tree-sha1 = "5ea6acdd53a51d897672edb694e3cc2912f3f8a7"
+uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+version = "0.4.46"
 
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
@@ -858,6 +1113,11 @@ git-tree-sha1 = "2fa9ee3e63fd3a4f7a9a4f4744a52f4856de82df"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
 version = "0.5.13"
 
+[[deps.MappedArrays]]
+git-tree-sha1 = "2dab0221fe2b0f2cb6754eaa743cc266339f527e"
+uuid = "dbb5928d-eab1-5f90-85c2-b9b0edb7c900"
+version = "0.4.2"
+
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
@@ -876,6 +1136,12 @@ version = "1.1.0"
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
 
+[[deps.MosaicViews]]
+deps = ["MappedArrays", "OffsetArrays", "PaddedViews", "StackViews"]
+git-tree-sha1 = "7b86a5d4d70a9f5cdf2dacb3cbe6d251d1a61dbe"
+uuid = "e94cdb99-869f-56ef-bcf0-1ae2bcbe0389"
+version = "0.3.4"
+
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
 version = "2023.1.10"
@@ -889,6 +1155,15 @@ version = "1.0.2"
 [[deps.NetworkOptions]]
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 version = "1.2.0"
+
+[[deps.OffsetArrays]]
+git-tree-sha1 = "6a731f2b5c03157418a20c12195eb4b74c8f8621"
+uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
+version = "1.13.0"
+weakdeps = ["Adapt"]
+
+    [deps.OffsetArrays.extensions]
+    OffsetArraysAdaptExt = "Adapt"
 
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
@@ -916,6 +1191,12 @@ deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
 git-tree-sha1 = "949347156c25054de2db3b166c52ac4728cbad65"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
 version = "0.11.31"
+
+[[deps.PaddedViews]]
+deps = ["OffsetArrays"]
+git-tree-sha1 = "0fac6313486baae819364c52b4f483450a9d793f"
+uuid = "5432bcbf-9aad-5242-b902-cca2824c8663"
+version = "0.5.12"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -1092,6 +1373,40 @@ weakdeps = ["ChainRulesCore"]
     [deps.SpecialFunctions.extensions]
     SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
 
+[[deps.StackViews]]
+deps = ["OffsetArrays"]
+git-tree-sha1 = "46e589465204cd0c08b4bd97385e4fa79a0c770c"
+uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
+version = "0.1.1"
+
+[[deps.Static]]
+deps = ["IfElse"]
+git-tree-sha1 = "d2fdac9ff3906e27f7a618d47b676941baa6c80c"
+uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
+version = "0.8.10"
+
+[[deps.StaticArrayInterface]]
+deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Requires", "SparseArrays", "Static", "SuiteSparse"]
+git-tree-sha1 = "5d66818a39bb04bf328e92bc933ec5b4ee88e436"
+uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
+version = "1.5.0"
+weakdeps = ["OffsetArrays", "StaticArrays"]
+
+    [deps.StaticArrayInterface.extensions]
+    StaticArrayInterfaceOffsetArraysExt = "OffsetArrays"
+    StaticArrayInterfaceStaticArraysExt = "StaticArrays"
+
+[[deps.StaticArrays]]
+deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
+git-tree-sha1 = "bf074c045d3d5ffd956fa0a461da38a44685d6b2"
+uuid = "90137ffa-7385-5640-81b9-e52037218182"
+version = "1.9.3"
+weakdeps = ["ChainRulesCore", "Statistics"]
+
+    [deps.StaticArrays.extensions]
+    StaticArraysChainRulesCoreExt = "ChainRulesCore"
+    StaticArraysStatisticsExt = "Statistics"
+
 [[deps.StaticArraysCore]]
 git-tree-sha1 = "36b3d696ce6366023a0ea192b4cd442268995a0d"
 uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
@@ -1154,6 +1469,21 @@ version = "0.1.1"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
+[[deps.TiledIteration]]
+deps = ["OffsetArrays", "StaticArrayInterface"]
+git-tree-sha1 = "1176cc31e867217b06928e2f140c90bd1bc88283"
+uuid = "06e1c1a7-607b-532d-9fad-de7d9aa2abac"
+version = "0.5.0"
+
+[[deps.TranscodingStreams]]
+git-tree-sha1 = "a09c933bebed12501890d8e92946bbab6a1690f1"
+uuid = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
+version = "0.10.5"
+weakdeps = ["Random", "Test"]
+
+    [deps.TranscodingStreams.extensions]
+    TestExt = ["Test", "Random"]
+
 [[deps.Tricks]]
 git-tree-sha1 = "eae1bb484cd63b36999ee58be2de6c178105112f"
 uuid = "410a4b4d-49e4-4fbc-ab6d-cb71b17b3775"
@@ -1198,26 +1528,41 @@ version = "17.4.0+2"
 """
 
 # ╔═╡ Cell order:
+# ╟─29d3056e-731e-4320-8e4e-aab6b4b6c334
 # ╟─2ad61290-ec52-11ee-1ed4-bf2c121bd57f
+# ╟─9341d824-70b2-4f2c-b706-33762fa3439f
 # ╠═d655634e-8ee5-48d5-93e3-07f6b0e85567
 # ╟─23d012e7-3f1f-4205-892e-0a55c284a51f
 # ╠═729c180b-8f5b-49c5-b991-df081d05ccc7
 # ╠═7de4a2d8-e88d-4ed8-856c-7be58322aa6b
-# ╟─f54f7a94-a68b-468d-b92e-fe47e69285f6
+# ╠═f54f7a94-a68b-468d-b92e-fe47e69285f6
+# ╟─0d1dd973-7e64-472e-8885-f005532d88f8
 # ╠═0ab781d9-e250-47f0-948f-e52d4207e385
+# ╟─c0ab2098-0304-46cc-a2d9-af756b4a703e
 # ╠═fd7d0d0e-1943-4901-a303-a5774c4bcebc
+# ╟─8971fa73-a6a7-46b9-8209-fbaa779ae53e
 # ╠═8749dc10-c27b-46a6-b214-687a99c101a7
+# ╟─34fb35c4-d8d7-4ddd-8b81-d58ced94dc94
 # ╠═97a1f4c0-570e-4035-a028-ec76f61d316f
+# ╟─1afa04fc-ebb8-4d5d-9489-dc8b24e8fb06
 # ╠═e588c06c-6dcc-48d1-bb68-221c19575ca8
-# ╟─47adebc5-306e-4d4a-a2b2-0c9dbd164914
+# ╟─61e41c96-be12-450e-800a-81660bed8ce9
+# ╠═17dfe390-334e-4491-98fb-07ec499540cd
+# ╠═cc942948-1a4c-4525-9178-6f68867854e0
 # ╟─f7f6d21b-e830-49e3-8605-2da8ba082cb7
 # ╠═481b9a8c-c0ff-4e50-b0b3-46065558071a
 # ╟─80da6802-0585-4fe8-9162-a6989bc48796
 # ╟─9ddb45a6-9318-4e33-8f69-f11e5ba9a158
 # ╟─c8b068ef-0c62-4ea7-bbea-1c15defcbecf
-# ╠═a111afa2-0039-4551-a26d-0f4f8e539de4
+# ╟─a111afa2-0039-4551-a26d-0f4f8e539de4
 # ╟─c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
 # ╠═43411086-a7e7-4001-ab11-c6c965ac5318
+# ╟─28814af7-1081-4a91-93c8-fca4387c372d
+# ╠═c44a92d5-593b-49b9-a2d1-99b64c40f8be
+# ╠═b2feb585-fb09-4970-813f-f61781987bb3
+# ╠═7faaab10-312b-44ba-85bd-7e847d268817
+# ╠═803d9973-2a67-4cb0-af4b-c69d7e4779e1
 # ╟─3099f6b6-dc46-46b6-b7a5-63907dfa32a4
+# ╟─b37b081e-85a4-4b69-b544-de0adeb65e16
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
