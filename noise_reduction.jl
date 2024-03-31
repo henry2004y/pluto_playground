@@ -121,8 +121,8 @@ md"""
 - High-Pass
 - Low-Pass
 - Band-Pass
-- Moving box average
-- Neighbor average
+- Moving average
+- Binomial
 - Median
 
 For linear filtering with a finite-impulse response (FIT) filtering, one can either choose a direct algorithm or one based on the FFT. By default, this choice is made based on kernel size:
@@ -229,9 +229,43 @@ end
 
 # ╔═╡ 1afa04fc-ebb8-4d5d-9489-dc8b24e8fb06
 md"""
-### Neighbor-Averaged Filter
+### Binomial Filter
 
-The Neighbor-Averaged filter is the one currently used in FLEKS.
+A commonly used three-point filter in PIC simulations (including FLEKS) is
+
+```math
+\phi_j^f = \alpha\phi_j + (1-\alpha)\frac{\phi_{j-1} + \phi_{j+1}}{2}
+```
+where ``\phi^f`` is the filtered quantity.  This filter is called a binomial filter when ``\alpha = 1/2``.
+
+Assuming ``\phi = e^{jkx}`` and ``\phi^f = g(k) e^{jkx}``, where g is the *filter gain*, we have
+
+```math
+\begin{aligned}
+g(k) &= \frac{1}{2} + \frac{1}{2}\cos(k\Delta x) \\
+&\approx 1 - \frac{(k\Delta x)^2}{4} + \mathcal{O}(k^4)
+\end{aligned}
+```
+
+For n successive applications, the total attenuation G is given by
+
+```math
+G = \Pi_{i=1}^n g(k) \approx 1 - \frac{n(k\Delta x)^2}{4} + \mathcal{O}(k^4)
+```
+
+The bilinear filter provides complete suppression of the signal at the grid Nyquist wavelength (twice the grid cell size). Suppression of the signal at integers of the Nyquist wavelength can be obtained by using a stride s in the filter
+
+```math
+\phi_j^f = \alpha\phi_j + (1-\alpha)\frac{\phi_{j-s} + \phi_{j+s}}{2}
+```
+for which the gain is given by
+
+```math
+\begin{aligned}
+g(k) &= \alpha + (1-\alpha)\cos(sk\Delta x) \\
+&\approx 1 - (1-\alpha)\frac{(sk\Delta x)^2}{2} + \mathcal{O}(k^4)
+\end{aligned}
+```
 """
 
 # ╔═╡ e588c06c-6dcc-48d1-bb68-221c19575ca8
@@ -246,7 +280,7 @@ let
     	scatter(x=t, y=ȳ1, mode="lines", name="nIter = 1"),
 		scatter(x=t, y=ȳ10, mode="lines", name="nIter = 10"),
 		scatter(x=t, y=ȳ20, mode="lines", name="nIter = 20")],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Neighbor-Averaged Signal")
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Binomial-Filtered Signal")
 	)
 end
 
@@ -270,7 +304,7 @@ let
 		#scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=ȳ1, mode="lines", name="nbox = 1"),
 		],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Neighbor-Averaged Signal Using ImageFiltering")
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Binomial-Filtered Signal Using ImageFiltering")
 	)
 end
 
@@ -1535,7 +1569,7 @@ version = "17.4.0+2"
 # ╟─23d012e7-3f1f-4205-892e-0a55c284a51f
 # ╠═729c180b-8f5b-49c5-b991-df081d05ccc7
 # ╠═7de4a2d8-e88d-4ed8-856c-7be58322aa6b
-# ╠═f54f7a94-a68b-468d-b92e-fe47e69285f6
+# ╟─f54f7a94-a68b-468d-b92e-fe47e69285f6
 # ╟─0d1dd973-7e64-472e-8885-f005532d88f8
 # ╠═0ab781d9-e250-47f0-948f-e52d4207e385
 # ╟─c0ab2098-0304-46cc-a2d9-af756b4a703e
