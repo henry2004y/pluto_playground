@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ d655634e-8ee5-48d5-93e3-07f6b0e85567
 begin
 	using Random
@@ -136,12 +146,43 @@ md"""
 ### FLEKS freestream test
 
 - Solar wind parameters around Earth
+- ``\Delta x \sim \lambda_D``
 - Eventually unstable because of statistical noise
 """
 
 # ╔═╡ 1f24f058-d0b6-4dd5-8691-510f53fa5023
 let
 	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_original_freestream_dx12km_unstable.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ e95bf9e8-4a39-4f22-b6ea-4f33f8912b26
+md"""
+### FLEKS Quasi-parallel shock test
+
+- Solar wind parameters around Earth
+- ``\Delta x \sim 0.5\,\lambda_D \sim 1/4\,d_e``
+- High frequency (~ 0.5 Hz), small amplitude waves: are they physical or numerical?
+"""
+
+# ╔═╡ f565f905-d218-4c82-98cb-50b509367a81
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_original_30deg_shock_dx6km_mi2me100_477s.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ cee79ac4-e66e-41d1-a43e-f3469263b5ef
+md"""
+### FLEKS perpendicular shock test
+
+- Solar wind parameters around Earth
+- ``\Delta x \sim 0.5\,\lambda_D \sim 1/4\, d_e``
+- Unstable mode grows in the upstream
+"""
+
+# ╔═╡ 0f96ca5e-82b5-4c49-8bae-7fb1ad94f81c
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_original_90deg_shock_dx6km_unstable.mp4"
 	Resource(url, :width => 600, :autoplay => "", :loop => "")
 end
 
@@ -206,56 +247,10 @@ begin
 		t, y_truth, y_noise
 	end
 
-	function moving_average(g::AbstractVector{<:AbstractFloat}, n::Int)
-   		nbackward = div(n, 2)
-   		nforward = isodd(n) ? nbackward : nbackward - 1
-   		len = length(g)
-   		g_avg = similar(g)
-   		@inbounds for i in 1:len
-      		lo = max(1, i - nbackward)
-      		hi = min(len, i + nforward)
-      		g_avg[i] = mean(@view g[lo:hi])
-   		end
-
-   		g_avg
-	end
-
-	function neighbor_average(g, n=1; iterations=1)
-		len = length(g)
-   		g_avg = copy(g)
-		g_tmp = similar(g)
-		for iter in 1:iterations
-   			@inbounds for i in 1:len
-      			lo = max(1, i - n)
-      			hi = min(len, i + n)
-      			g_tmp[i] = mean(@view g_avg[lo:hi])
-   			end
-			g_avg = g_tmp
-		end
-
-   		g_avg
-	end
-
-
 	fs = 1 # sampling frequency [Hz]
 	t, y_truth, y = generate_fake_signal()
 	N = length(t)
-end
-
-# ╔═╡ 41cbedc8-5509-47d0-a051-9ed228f854a2
-let
-	x = data["x"]
-	rhos1 = @view data["rhos1"][:,1]
-	rhos1_smooth10 = neighbor_average(rhos1, 1; iterations=10)
-	rhos1_smooth50 = neighbor_average(rhos1, 1; iterations=50)
-
-	plot([
-		scatter(x=x[1:8:end], y=rhos1[1:8:end], name="raw", mode="markers", marker_size=1),
-    	scatter(x=x, y=rhos1_smooth10, mode="lines", name="niter = 10"),
-		scatter(x=x, y=rhos1_smooth50, mode="lines", name="niter = 50"),
-		],
-		Layout(yaxis_title="rhos1", xaxis_title="x [km]", title="Neighbor-Averaged Density")
-	)
+	nothing
 end
 
 # ╔═╡ 7de4a2d8-e88d-4ed8-856c-7be58322aa6b
@@ -287,112 +282,155 @@ The above filters does not work with large scale PIC models quite well because
 
 ### Local Filters
 
-- Binomial
-- Median
+- N-point filters
 """
+
+# ╔═╡ 55ce9882-ddfb-4abf-9e77-4792cee737c3
+begin
+	function moving_average(g::AbstractVector{<:AbstractFloat}, n::Int)
+   		nbackward = n ÷ 2
+   		nforward = isodd(n) ? nbackward : nbackward - 1
+   		len = length(g)
+   		g_avg = similar(g)
+   		@inbounds for i in 1:len
+      		lo = max(1, i - nbackward)
+      		hi = min(len, i + nforward)
+      		g_avg[i] = mean(@view g[lo:hi])
+   		end
+
+   		g_avg
+	end
+
+	function neighbor_average(g, n=1; iterations=1)
+		len = length(g)
+   		g_avg = copy(g)
+		g_tmp = similar(g)
+		for iter in 1:iterations
+   			@inbounds for i in 1:len
+      			lo = max(1, i - n)
+      			hi = min(len, i + n)
+      			g_tmp[i] = mean(@view g_avg[lo:hi])
+   			end
+			g_avg = g_tmp
+		end
+
+   		g_avg
+	end
+end
+
+# ╔═╡ 41cbedc8-5509-47d0-a051-9ed228f854a2
+let
+	x = data["x"]
+	rhos1 = @view data["rhos1"][:,1]
+	rhos1_smooth10 = neighbor_average(rhos1, 1; iterations=10)
+	rhos1_smooth50 = neighbor_average(rhos1, 1; iterations=50)
+
+	plot([
+		scatter(x=x[1:8:end], y=rhos1[1:8:end], name="raw", mode="markers", marker_size=1),
+    	scatter(x=x, y=rhos1_smooth10, mode="lines", name="niter = 10"),
+		scatter(x=x, y=rhos1_smooth50, mode="lines", name="niter = 50"),
+		],
+		Layout(yaxis_title="rhos1", xaxis_title="x [km]", title="Binomial-filtered density")
+	)
+end
+
+# ╔═╡ 40401333-2ca9-4bfc-bf05-562bfb0019d6
+@bind basicFilter Select(["High-Pass", "Low-Pass", "Band-Pass", "Moving-Average"])
 
 # ╔═╡ 0d1dd973-7e64-472e-8885-f005532d88f8
-md"""
+if basicFilter == "High-Pass"
+	md"""
 ### High-Pass Filter
 
-High-Pass filter removes the low frequency signals.
+A high-pass filter removes the low frequency signals.
 """
+elseif basicFilter == "Low-Pass"
+	md"""
+### Low-Pass Filter
+
+A low-pass filter removes the high frequency signals.
+"""
+elseif basicFilter == "Band-Pass"
+	md"""
+### Band-Pass Filter
+
+A band-Pass filter maintains the signal within a specified lower-bound and upper-bound.
+"""
+elseif basicFilter == "Moving-Average"
+	md"""
+### Moving-Average Filter
+
+A moving-Average filter averages over a selected number of neighboring points.
+"""
+end
 
 # ╔═╡ 0ab781d9-e250-47f0-948f-e52d4207e385
 let
-	Tcut = 10.0 # [s]
-	f0 = 1 / Tcut  # cutoff frequencies [Hz]
-	responsetype = Highpass(f0; fs)
-	designmethod = Butterworth(4)
-	hpfilt = digitalfilter(responsetype, designmethod)
+	if basicFilter == "High-Pass"
+		Tcut = 10.0 # [s]
+		f0 = 1 / Tcut  # cutoff frequencies [Hz]
+		responsetype = Highpass(f0; fs)
+		designmethod = Butterworth(4)
+		hpfilt = digitalfilter(responsetype, designmethod)
 
-	y_highpass = filtfilt(hpfilt, y)
+		y_highpass = filtfilt(hpfilt, y)
 
-	plot([
-		scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
-		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
-    	scatter(x=t, y=y_highpass, mode="lines", name="High-Pass")],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="High-Pass Filtered Signal")
-	)
-end
+		plot([
+			scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
+			scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
+    		scatter(x=t, y=y_highpass, mode="lines", name="High-Pass")],
+			Layout(yaxis_title="Outputs", xaxis_title="Samples", title="High-Pass Filtered Signal")
+		)
+	elseif basicFilter == "Low-Pass"
+		Tcut = 30
+		f0 = 1 / Tcut
+		responsetype = Lowpass(f0; fs)
+		designmethod = Butterworth(4)
+		lpfilt = digitalfilter(responsetype, designmethod)
 
-# ╔═╡ c0ab2098-0304-46cc-a2d9-af756b4a703e
-md"""
-### Low-Pass Filter
+		y_lowpass = filtfilt(lpfilt, y)
 
-Low-Pass filter removes the high frequency signals.
-"""
+		plot([
+			scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
+			scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
+    		scatter(x=t, y=y_lowpass, mode="lines", name="Low-Pass")], 
+			Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Low-Pass Filtered Signal")
+		)
+	elseif basicFilter == "Band-Pass"
+		fl, fh = 1/30, 1/10  # cutoff frequencies [Hz]
+		responsetype = Bandpass(fl, fh; fs)
+		designmethod = Butterworth(4)
+		filter = digitalfilter(responsetype, designmethod)
 
-# ╔═╡ fd7d0d0e-1943-4901-a303-a5774c4bcebc
-let
-	Tcut = 30
-	f0 = 1 / Tcut
-	responsetype = Lowpass(f0; fs)
-	designmethod = Butterworth(4)
-	lpfilt = digitalfilter(responsetype, designmethod)
+		y_bandpass = filtfilt(filter, y)
 
-	y_lowpass = filtfilt(lpfilt, y)
+		plot([
+			scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
+			scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
+    		scatter(x=t, y=y_bandpass, mode="lines", name="Band-Pass")],
+			Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Band-Pass Filtered Signal")
+		)
+	elseif basicFilter == "Moving-Average"
+		ȳ3 = moving_average(y, 3)
+		ȳ5 = moving_average(y, 5)
+		ȳ10 = moving_average(y, 10)
 
-	plot([
-		scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
-		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
-    	scatter(x=t, y=y_lowpass, mode="lines", name="Low-Pass")], 
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Low-Pass Filtered Signal")
-	)
-end
-
-# ╔═╡ 8971fa73-a6a7-46b9-8209-fbaa779ae53e
-md"""
-### Band-Pass Filter
-
-Band-Pass filter maintains the signal within a specified lower-bound and upper-bound.
-"""
-
-# ╔═╡ 8749dc10-c27b-46a6-b214-687a99c101a7
-let
-	fl, fh = 1/30, 1/10  # cutoff frequencies [Hz]
-	responsetype = Bandpass(fl, fh; fs)
-	designmethod = Butterworth(4)
-	filter = digitalfilter(responsetype, designmethod)
-
-	y_bandpass = filtfilt(filter, y)
-
-	plot([
-		scatter(x=t, y=y, name="raw", line = attr(dash="dot")),
-		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
-    	scatter(x=t, y=y_bandpass, mode="lines", name="Band-Pass")],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Band-Pass Filtered Signal")
-	)
-end
-
-# ╔═╡ 34fb35c4-d8d7-4ddd-8b81-d58ced94dc94
-md"""
-### Moving-Average Filter
-
-The Moving-Average filter averages over a selected number of neighboring points.
-"""
-
-# ╔═╡ 97a1f4c0-570e-4035-a028-ec76f61d316f
-let
-	ȳ3 = moving_average(y, 3)
-	ȳ5 = moving_average(y, 5)
-	ȳ10 = moving_average(y, 10)
-
-	plot([
-		scatter(x=t, y=y, name="raw", line=attr(color="black", dash="dot")),
-		scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
-    	scatter(x=t, y=ȳ3, mode="lines", name="nbox = 3"),
-		scatter(x=t, y=ȳ5, mode="lines", name="nbox = 5"),
-		scatter(x=t, y=ȳ10, mode="lines", name="nbox = 10")],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Moving Averaged Signal")
-	)
+		plot([
+			scatter(x=t, y=y, name="raw", line=attr(color="black", dash="dot")),
+			scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
+    		scatter(x=t, y=ȳ3, mode="lines", name="nbox = 3"),
+			scatter(x=t, y=ȳ5, mode="lines", name="nbox = 5"),
+			scatter(x=t, y=ȳ10, mode="lines", name="nbox = 10")],
+			Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Moving-Averaged Signal")
+		)
+	end
 end
 
 # ╔═╡ 1afa04fc-ebb8-4d5d-9489-dc8b24e8fb06
 md"""
 ### Binomial Filter
 
-A commonly used three-point filter in PIC simulations (including FLEKS) is
+A commonly used three-point filter in PIC simulations (including FLEKS) is ([Vay+, 2011])
 
 ```math
 \phi_j^f = \alpha\phi_j + (1-\alpha)\frac{\phi_{j-1} + \phi_{j+1}}{2}
@@ -449,7 +487,7 @@ end
 md"""
 ### Filtering Packages
 
-There are already available packages in the community for filtering.
+There are available packages in the community for filtering.
 
 - [ImageFiltering](https://juliaimages.org/ImageFiltering.jl/stable/)
 - [HampelOutliers](https://github.com/tobydriscoll/HampelOutliers.jl)
@@ -465,7 +503,7 @@ let
 		#scatter(x=t, y=y_truth, name="truth", line = attr(dash="dashdot")),
     	scatter(x=t, y=ȳ1, mode="lines", name="nbox = 1"),
 		],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Binomial-Filtered Signal Using ImageFiltering")
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Binomial-filtered signal using ImageFiltering")
 	)
 end
 
@@ -481,16 +519,21 @@ let
     	scatter(x=t, y=ȳ1, mode="lines", name="npoint = 3"),
 		scatter(x=t, y=ȳ2, mode="lines", name="npoint = 9"),
 		],
-		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Median-Filtered Signal Using ImageFiltering")
+		Layout(yaxis_title="Outputs", xaxis_title="Samples", title="Median-filtered signal using ImageFiltering")
 	)
 end
 
-# ╔═╡ 33c872b9-a84c-4b90-b38e-9f1863e9cea2
+# ╔═╡ 540f36b5-3b55-4d6e-95e4-31503b7be47b
 md"""
 ## PIC Noise Reduction Techniques
 
 - Variance reduction, e.g. ``\delta f``
-- Filtering: physical/Fourier domain
+  - Limited scope of problems
+- Filtering ``\rho,\,\mathbf{U},\,\mathbf{E},\,\mathbf{B}``
+  - Physical domain
+  - Fourier domain
+- Coordinate system transformation
+  - Lab frame ``\left(\mathbf{E} = -\mathbf{U}\times\mathbf{B}\right)`` -> comoving frame ``\left(\mathbf{E} = 0\right)``
 - High-order shape functions
 - Kernel density estimation
 
@@ -498,17 +541,104 @@ md"""
 
 FLEKS use a uniform box shape function. High-order (>2) shape functions can mitigate the noise effect.
 
+Adapted from Kinetic Plasma Simulation: Particle In Cell Method, Lapenta 2015
+
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/PIC_shape_functions.png",
-    MIME("PIC_shape"),
     (:width => 600)
 ))
 """
+
+# ╔═╡ dcfc034d-2858-4804-8d2c-685e86c0c10b
+md"""
+## Current FLEKS Testing Progress
+
+Upstream/Downstream state
+
+| n [/cc] | V [km/s]  | T [K] | B [nT]   |
+|---------|------------|-------|----------|
+| 1       | [-545, 0, 0]       | $7.2\times 10^5$        | [-4.3, 0.0, 2.5]    |
+| 3.5     | [-157, 0, 26]      | $6.9\times 10^6$        | [-4.3, 0.0, 9.4]    |
+
+``V_A`` [km/s]: 109 -> 121
+
+``V_S`` [km/s]: 100 -> 308
+
+``M_A``: 5.0 -> 1.3 (?)
+
+``\beta``: 1.0 -> 9.4
+
+``P_i`` (``P_e``) [nPa]: 0.005 -> 0.16
+
+``m_i / m_e``: 100
+
+Marginally-stable ``\Delta x \sim 1/4\,d_e``
+
+### Noise reduction attempts
+
+- Coordinate transformation + E, U smoothing: partially works for freestream, minor improvement for quasi-parallel/quasi-perpendicular shocks
+- Coordinate transformation + B smoothing: works like magic!
+- B smoothing only: still works!
+"""
+
+# ╔═╡ 05abfcc5-5ae6-4b4f-8629-38ea35006867
+md"""
+### FLEKS freestream test: smoothing B
+
+- Solar wind parameters around Earth
+- Very stable after 300s
+"""
+
+# ╔═╡ 8655b0af-4479-40bf-9cdb-cc4d166a0731
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB0_freestream_dx94km_300s_nocomoving.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ a08a7827-27ac-4d6c-b9e1-0a58caa071db
+md"""
+### FLEKS quasi-parallel shock test: smoothing B
+
+- Solar wind parameters around Earth
+- Very stable after 300s: ``\Delta x \gg \lambda_D``
+- Downstream wave amplitude depends on number of smoothings
+
+**dx = 47 km** ~ 2 de
+"""
+
+# ╔═╡ b1f8bad4-ed80-4256-9e73-88d02b2186b7
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB0_30deg_shock_dx47km_300s.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ e2768572-c08d-46bc-85f0-6c0d7658ac48
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB2_30deg_shock_dx47km_300s.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ e26e73e1-92c0-4266-bb28-0b9ec7358994
+md"""
+**dx = 376 km** ~ 16 de ~ 1.6 di
+"""
+
+# ╔═╡ e693e1f8-958d-4f97-b99c-448273cef62a
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB0_30deg_shock_dx376km_300s.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ ddae610c-0081-48f7-a8ab-4d3c60984248
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB2_30deg_shock_dx376km_300s.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
 
 # ╔═╡ f7f6d21b-e830-49e3-8605-2da8ba082cb7
 md"""
 ## Kernel Density Estimation (KDE)
 
-Imagine you observe 6 particles at a location with velocities [9,12,10,55,62,50]. The question is: **what is the true distribution of particles?** Kernel Density Estimation (KDE) is a method specifically tackling this task.
+Imagine you observe 6 particles at a location with velocities [5, 14, 10, 55, 62, 50]. The question is: **what is the true velocity distribution of particles?** Kernel Density Estimation (KDE) is a method specifically tackling this task.
 
 ```math
 \hat{f}_h(x) = \frac{1}{n} \sum_{i=1}^n K_h(x - x_i)
@@ -554,7 +684,7 @@ Finding the optimal width is equivalent to the well-known *bias-variance trade-o
 
 # ╔═╡ 481b9a8c-c0ff-4e50-b0b3-46065558071a
 let
-	weights = [9, 12, 10, 55, 62, 50]
+	weights = [5, 14, 10, 55, 62, 50]
 	n = length(weights)
 	x = range(-10, 80, length=500)
 	widths = [1, 5, 20]
@@ -591,8 +721,8 @@ The expectation is taken on random variables ``\{X_i | i=1,...,n\}`` of observed
 \mathrm{MISE} = \mathrm{bias}^2 + \mathrm{variance}
 ```
 
-- bias: deviation of the estimated density from the true value, i.e. systematic error
-- variance: fluctuation of the density estimation, i.e. noise
+- bias: deviation of the estimated value from the true value, i.e. systematic error
+- variance: fluctuation of the estimation, i.e. noise
 
 ### Optimization problem
 
@@ -602,16 +732,18 @@ The expectation is taken on random variables ``\{X_i | i=1,...,n\}`` of observed
 
 However, we don't know the true distribution f(x). How can we proceed? A variety of automatic, data-based methods have been developed to select the bandwidth:
 
+- Visual inspection: brute force
+
 - Rules-of-thumb selector: If Gaussian basis functions are used to approximate univariate data, and the underlying density being estimated is Gaussian, the optimal choice for h is given by Silverman
 
 ```math
 h = \left( \frac{4\hat{\sigma}^5}{3n} \right)^{1/5} \approx 1.06 \hat{\sigma}n^{-1/5}
 ```
-where $\hat{\sigma}$ is the std of samples.
+where $\hat{\sigma}$ is the standard deviation of samples.
 
 - Plug-in selector: an iterative process which requires ``f^{\prime\prime}``
 
-- Visual inspection: brute force
+- Cross-valication selector [Wentao Wu, Hong Qin 2018]
 """
 
 # ╔═╡ 9ddb45a6-9318-4e33-8f69-f11e5ba9a158
@@ -658,7 +790,7 @@ The CV function is then used to estimate ``\hat{h}`` that minimize it.
 
 ### Adaptive width adjustment
 
-If the density has sharp peaks or narrow valleys, it is more likely that the density estimator that minimizes the mean and integrated error will *cut the peaks and fill the valleys*.
+If the density has sharp peaks or narrow valleys, it is more likely that the density estimator that minimizes MISE will *cut the peaks and fill the valleys*.
 
 If the bandwidth is not held fixed, but is varied depending upon the location of either the estimate (balloon estimator) or the samples (pointwise estimator), this produces a particularly powerful method termed adaptive or variable bandwidth kernel density estimation.
 
@@ -683,8 +815,8 @@ and ``\alpha`` is a sensitive factor, which is usually set to 0.5. Larger ``\alp
 
 ### When to apply the adjustment
 
-- Density estimation is not cheap.
-- When the distribution is close to uniform, the optimal width -> ``\infty``, so we shouldn't even perform the estimation!
+- Density estimation is not cheap!
+- When the distribution is close to uniform, the optimal width ``\hat{h}\rightarrow\infty``, so we shouldn't even perform the estimation!
 
 Criterion:
 - Anderson-Darling test, to tell whether or not samples obey uniform distribution.
@@ -1682,31 +1814,40 @@ version = "17.4.0+2"
 # ╟─e0577a3a-13a7-49d8-bf64-19b26151227a
 # ╟─b118ac58-492d-46ab-86f2-9531ce37ec6a
 # ╠═6838c37b-d6e4-4157-b649-e7caafefb20e
-# ╠═3c68a93e-11e0-4378-be70-1c3f73830219
-# ╠═d6f93ba8-119d-454d-902f-731d7b8c04b8
-# ╠═41cbedc8-5509-47d0-a051-9ed228f854a2
+# ╟─3c68a93e-11e0-4378-be70-1c3f73830219
+# ╟─d6f93ba8-119d-454d-902f-731d7b8c04b8
+# ╟─41cbedc8-5509-47d0-a051-9ed228f854a2
 # ╟─ba5622a8-c9eb-4fe0-b63a-ed427ca90591
 # ╟─1f24f058-d0b6-4dd5-8691-510f53fa5023
+# ╟─e95bf9e8-4a39-4f22-b6ea-4f33f8912b26
+# ╟─f565f905-d218-4c82-98cb-50b509367a81
+# ╟─cee79ac4-e66e-41d1-a43e-f3469263b5ef
+# ╟─0f96ca5e-82b5-4c49-8bae-7fb1ad94f81c
 # ╟─56ee1010-da2e-4a3d-bb06-5b1a717e8306
 # ╟─8ddb85dd-b6af-4aec-a27a-b20555a4aa4f
 # ╟─23d012e7-3f1f-4205-892e-0a55c284a51f
 # ╠═729c180b-8f5b-49c5-b991-df081d05ccc7
 # ╠═7de4a2d8-e88d-4ed8-856c-7be58322aa6b
 # ╟─f54f7a94-a68b-468d-b92e-fe47e69285f6
+# ╠═55ce9882-ddfb-4abf-9e77-4792cee737c3
+# ╟─40401333-2ca9-4bfc-bf05-562bfb0019d6
 # ╟─0d1dd973-7e64-472e-8885-f005532d88f8
-# ╠═0ab781d9-e250-47f0-948f-e52d4207e385
-# ╟─c0ab2098-0304-46cc-a2d9-af756b4a703e
-# ╠═fd7d0d0e-1943-4901-a303-a5774c4bcebc
-# ╟─8971fa73-a6a7-46b9-8209-fbaa779ae53e
-# ╠═8749dc10-c27b-46a6-b214-687a99c101a7
-# ╟─34fb35c4-d8d7-4ddd-8b81-d58ced94dc94
-# ╠═97a1f4c0-570e-4035-a028-ec76f61d316f
+# ╟─0ab781d9-e250-47f0-948f-e52d4207e385
 # ╟─1afa04fc-ebb8-4d5d-9489-dc8b24e8fb06
-# ╠═e588c06c-6dcc-48d1-bb68-221c19575ca8
+# ╟─e588c06c-6dcc-48d1-bb68-221c19575ca8
 # ╟─61e41c96-be12-450e-800a-81660bed8ce9
 # ╠═17dfe390-334e-4491-98fb-07ec499540cd
 # ╠═cc942948-1a4c-4525-9178-6f68867854e0
-# ╟─33c872b9-a84c-4b90-b38e-9f1863e9cea2
+# ╟─540f36b5-3b55-4d6e-95e4-31503b7be47b
+# ╟─dcfc034d-2858-4804-8d2c-685e86c0c10b
+# ╟─05abfcc5-5ae6-4b4f-8629-38ea35006867
+# ╟─8655b0af-4479-40bf-9cdb-cc4d166a0731
+# ╟─a08a7827-27ac-4d6c-b9e1-0a58caa071db
+# ╟─b1f8bad4-ed80-4256-9e73-88d02b2186b7
+# ╟─e2768572-c08d-46bc-85f0-6c0d7658ac48
+# ╟─e26e73e1-92c0-4266-bb28-0b9ec7358994
+# ╟─e693e1f8-958d-4f97-b99c-448273cef62a
+# ╟─ddae610c-0081-48f7-a8ab-4d3c60984248
 # ╟─f7f6d21b-e830-49e3-8605-2da8ba082cb7
 # ╟─ef37fc47-5a75-47cf-8817-195cb0adc64c
 # ╠═481b9a8c-c0ff-4e50-b0b3-46065558071a
