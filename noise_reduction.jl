@@ -44,16 +44,23 @@ TableOfContents()
 
 # ╔═╡ e0577a3a-13a7-49d8-bf64-19b26151227a
 html"""
+<a class="anchor" id="KDE-landau-damping">
 <p>KDE VS PIC in the Landau damping problem: 1D space [0, 2π] with 512 grid points, 2^14 particles, initial ρ0 = 1, perturbation ρ1 = 0.02 cos(x).</p>
 
 <img src="https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/density_estimate_KDEvsPIC.png"
 	width="400"
 	alt="Noise in PIC">
+
+<a href="#Kernel-Density-Estimation-(KDE)">Jump to KDE</a>
 """
 
 # ╔═╡ b118ac58-492d-46ab-86f2-9531ce37ec6a
 md"""
 ## Noise in FLEKS
+
+```math
+\mathbf{E}^{n+1} = \mathbf{E}^n + \mathrm{d}\mathbf{E}^n
+```
 
 The electric field update equation:
 
@@ -605,11 +612,17 @@ md"""
 **dx = 47 km** ~ 2 de
 """
 
+# ╔═╡ 130d366c-f14f-4583-b04e-c5711732b1b5
+md"Node-center to cell-center B smoothing:"
+
 # ╔═╡ b1f8bad4-ed80-4256-9e73-88d02b2186b7
 let
 	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB0_30deg_shock_dx47km_300s.mp4"
 	Resource(url, :width => 600, :autoplay => "", :loop => "")
 end
+
+# ╔═╡ 62d65a04-7278-4811-a959-aacbea255018
+md"nSmoothB = 2"
 
 # ╔═╡ e2768572-c08d-46bc-85f0-6c0d7658ac48
 let
@@ -620,6 +633,8 @@ end
 # ╔═╡ e26e73e1-92c0-4266-bb28-0b9ec7358994
 md"""
 **dx = 376 km** ~ 16 de ~ 1.6 di
+
+Node-center to cell-center B smoothing:
 """
 
 # ╔═╡ e693e1f8-958d-4f97-b99c-448273cef62a
@@ -628,15 +643,54 @@ let
 	Resource(url, :width => 600, :autoplay => "", :loop => "")
 end
 
+# ╔═╡ 332d95ae-5be0-4ce8-8649-b712388bd8b5
+md"nSmoothB = 2"
+
 # ╔═╡ ddae610c-0081-48f7-a8ab-4d3c60984248
 let
 	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_smoothB2_30deg_shock_dx376km_300s.mp4"
 	Resource(url, :width => 600, :autoplay => "", :loop => "")
 end
 
+# ╔═╡ 8172def2-78cf-41d4-b12f-a622f4fb49c0
+md"""
+## Comparison With Hybrid-Vlasov Model
+
+Vlasiator 1D simulation with dx = 47 km, dv = 30km/s:
+
+- Vlasiator has weird boundary issues.
+- Vlasiator shows higher frequency downstream waves.
+"""
+
+# ╔═╡ 617a627d-09b2-4742-83bd-f60f549b99c3
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/vlasiator_30deg_shock_dx47km_500s.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ a5459cf5-e848-42d3-be15-ce42b054e83f
+md"""
+## Comparison With Hybrid-PIC Model
+
+HybridVPIC 1D simulation (ongoing...)
+"""
+
+# ╔═╡ 28a632c9-eae3-4a43-b978-0d686a9f9c14
+md"""
+## Comparison With Explicit Full PIC Model
+
+Ongoing...
+"""
+
 # ╔═╡ f7f6d21b-e830-49e3-8605-2da8ba082cb7
 md"""
 ## Kernel Density Estimation (KDE)
+
+### Back to the electrostatic Landau damping problem
+
+[KDE-landau-damping](#KDE-landau-damping)
+
+### Simplified example
 
 Imagine you observe 6 particles at a location with velocities [5, 14, 10, 55, 62, 50]. The question is: **what is the true velocity distribution of particles?** Kernel Density Estimation (KDE) is a method specifically tackling this task.
 
@@ -1843,11 +1897,18 @@ version = "17.4.0+2"
 # ╟─05abfcc5-5ae6-4b4f-8629-38ea35006867
 # ╟─8655b0af-4479-40bf-9cdb-cc4d166a0731
 # ╟─a08a7827-27ac-4d6c-b9e1-0a58caa071db
+# ╟─130d366c-f14f-4583-b04e-c5711732b1b5
 # ╟─b1f8bad4-ed80-4256-9e73-88d02b2186b7
+# ╟─62d65a04-7278-4811-a959-aacbea255018
 # ╟─e2768572-c08d-46bc-85f0-6c0d7658ac48
 # ╟─e26e73e1-92c0-4266-bb28-0b9ec7358994
 # ╟─e693e1f8-958d-4f97-b99c-448273cef62a
+# ╟─332d95ae-5be0-4ce8-8649-b712388bd8b5
 # ╟─ddae610c-0081-48f7-a8ab-4d3c60984248
+# ╟─8172def2-78cf-41d4-b12f-a622f4fb49c0
+# ╟─617a627d-09b2-4742-83bd-f60f549b99c3
+# ╟─a5459cf5-e848-42d3-be15-ce42b054e83f
+# ╟─28a632c9-eae3-4a43-b978-0d686a9f9c14
 # ╟─f7f6d21b-e830-49e3-8605-2da8ba082cb7
 # ╟─ef37fc47-5a75-47cf-8817-195cb0adc64c
 # ╠═481b9a8c-c0ff-4e50-b0b3-46065558071a
