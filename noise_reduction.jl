@@ -26,11 +26,146 @@ html"<button onclick='present()'>present</button>"
 md"""
 # Noise Reduction: Hands-On Notebook
 
-Hongyang Zhou, 2024/03/27
+Hongyang Zhou, 2024/04/02
 """
 
 # ╔═╡ 9341d824-70b2-4f2c-b706-33762fa3439f
 TableOfContents()
+
+# ╔═╡ e0577a3a-13a7-49d8-bf64-19b26151227a
+html"""
+<p>KDE VS PIC in the Landau damping problem: 1D space [0, 2π] with 512 grid points, 2^14 particles, initial ρ0 = 1, perturbation ρ1 = 0.02 cos(x).</p>
+
+<img src="https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/density_estimate_KDEvsPIC.png"
+	width="400"
+	alt="Noise in PIC">
+"""
+
+# ╔═╡ b118ac58-492d-46ab-86f2-9531ce37ec6a
+md"""
+## Noise in FLEKS
+
+The electric field update equation:
+
+```math
+\begin{aligned}
+&\mathrm{d}\mathbf{E}^n + \delta^2\left[ \nabla(\nabla\cdot\mathrm{d}\mathbf{E}^n) − \nabla^2\mathrm{d}\mathbf{E}^n \right] = \\ &-\delta^2\left[ \nabla(\nabla\cdot\mathbf{E}^n) − \nabla^2\mathbf{E}^n \right] + \delta\left( \nabla\times\mathbf{B}^n - \frac{4\pi}{c}\bar{\mathbf{J}} \right)
+\end{aligned}
+```
+Noise buried under
+
+- electric field at time n ``\mathbf{E}^n``
+- current ``\bar{\mathbf{J}}`` 
+- magnetic field at time n ``\mathbf{B}^n``
+
+"""
+
+# ╔═╡ 6838c37b-d6e4-4157-b649-e7caafefb20e
+begin
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/data/"
+	filename = "EM_1Dfreestream_30deg_dx12km_3snapshots.jld2"
+	data = Downloads.download(joinpath(url, filename)) |> load
+end
+
+# ╔═╡ 3c68a93e-11e0-4378-be70-1c3f73830219
+let
+	x = data["x"]
+	by = data["By"]
+	rhos0 = data["rhos0"]
+	rhos1 = data["rhos1"]
+	uxs0 = data["uxs0"]
+
+	p1 = @views plot(
+		scatter(;x, y=by[:,1], mode="lines", name="t = 0s"),
+    	Layout(yaxis_title="By")
+	)
+
+	p2 = @views plot(
+    	scatter(;x, y=rhos0[:,1], mode="lines", name="t = 0s"),
+    	Layout(yaxis_title="rhos0")
+	)
+
+	p3 = @views plot(
+    	scatter(;x, y=rhos1[:,1], mode="lines", name="t = 0s"),
+    	Layout(yaxis_title="rhos1")
+	)
+
+	p4 = @views plot(
+    	scatter(;x, y=uxs0[:,1], mode="lines", name="t = 0s"),
+    	Layout(yaxis_title="uxs0", xaxis_title="x")
+	)
+	
+	
+	p = [p1; p2; p3; p4]
+end
+
+# ╔═╡ d6f93ba8-119d-454d-902f-731d7b8c04b8
+let
+	x = data["x"]
+	by = data["By"]
+	rhos0 = data["rhos0"]
+	rhos1 = data["rhos1"]
+	uxs0 = data["uxs0"]
+
+	p1 = @views plot(
+		scatter(;x, y=by[:,2], mode="lines", name="t = 97s"),
+    	Layout(yaxis_title="By")
+	)
+
+	p2 = @views plot(
+    	scatter(;x, y=rhos0[:,2], mode="lines", name="t = 97s"),
+    	Layout(yaxis_title="rhos0")
+	)
+
+	p3 = @views plot(
+    	scatter(;x, y=rhos1[:,2], mode="lines", name="t = 97s"),
+    	Layout(yaxis_title="rhos1")
+	)
+
+	p4 = @views plot(
+    	scatter(;x, y=uxs0[:,2], mode="lines", name="t = 97s"),
+    	Layout(yaxis_title="uxs0", xaxis_title="x")
+	)
+	
+	
+	p = [p1; p2; p3; p4]
+end
+
+# ╔═╡ ba5622a8-c9eb-4fe0-b63a-ed427ca90591
+md"""
+### FLEKS freestream test
+
+- Solar wind parameters around Earth
+- Eventually unstable because of statistical noise
+"""
+
+# ╔═╡ 1f24f058-d0b6-4dd5-8691-510f53fa5023
+let
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/FLEKS_original_freestream_dx12km_unstable.mp4"
+	Resource(url, :width => 600, :autoplay => "", :loop => "")
+end
+
+# ╔═╡ 56ee1010-da2e-4a3d-bb06-5b1a717e8306
+md"""
+As we can see later, errors in PIC consist of
+- Bias -> systematic error
+- Variance -> noise
+
+```math
+\mathrm{Total\,error} = \mathrm{Bias}^2 + \mathrm{Variance}
+```
+"""
+
+# ╔═╡ 8ddb85dd-b6af-4aec-a27a-b20555a4aa4f
+html"""
+<p>Error to complexity graph in maching learning</p>
+
+<img src="https://media.geeksforgeeks.org/wp-content/uploads/20200107023418/1_oO0KYF7Z84nePqfsJ9E0WQ.png"
+	width="700"
+	alt="Bias-Variance Trade-off">
+"""
+
+
 
 # ╔═╡ 23d012e7-3f1f-4205-892e-0a55c284a51f
 md"""
@@ -107,6 +242,22 @@ begin
 	N = length(t)
 end
 
+# ╔═╡ 41cbedc8-5509-47d0-a051-9ed228f854a2
+let
+	x = data["x"]
+	rhos1 = @view data["rhos1"][:,1]
+	rhos1_smooth10 = neighbor_average(rhos1, 1; iterations=10)
+	rhos1_smooth50 = neighbor_average(rhos1, 1; iterations=50)
+
+	plot([
+		scatter(x=x[1:8:end], y=rhos1[1:8:end], name="raw", mode="markers", marker_size=1),
+    	scatter(x=x, y=rhos1_smooth10, mode="lines", name="niter = 10"),
+		scatter(x=x, y=rhos1_smooth50, mode="lines", name="niter = 50"),
+		],
+		Layout(yaxis_title="rhos1", xaxis_title="x [km]", title="Neighbor-Averaged Density")
+	)
+end
+
 # ╔═╡ 7de4a2d8-e88d-4ed8-856c-7be58322aa6b
 plot([
 	scatter(x=t, y=y, name="raw"),
@@ -116,18 +267,28 @@ plot([
 
 # ╔═╡ f54f7a94-a68b-468d-b92e-fe47e69285f6
 md"""
-## Classic Filters
+## Filters
+
+### Classical Filters
 
 - High-Pass
 - Low-Pass
 - Band-Pass
 - Moving average
+
+For linear filtering with a finite-impulse response (FIT) filtering, one can either choose convolution in the time-space or FFT in the frequency-space. By default, this choice is made based on kernel size:
+
+- small kernel -> convolution
+- large kernel -> FFT
+
+The above filters does not work with large scale PIC models quite well because
+- collecting global information hurts parallelization;
+- large stencils require more communications in parallel processing.
+
+### Local Filters
+
 - Binomial
 - Median
-
-For linear filtering with a finite-impulse response (FIT) filtering, one can either choose a direct algorithm or one based on the FFT. By default, this choice is made based on kernel size:
-- small kernel -> direct
-- large kernel -> FFT.
 """
 
 # ╔═╡ 0d1dd973-7e64-472e-8885-f005532d88f8
@@ -208,7 +369,7 @@ end
 md"""
 ### Moving-Average Filter
 
-The Moving-Average filter averages over a selected number of neighboring points. This does not fit our problem quite well because large stencils require more communications in parallel processing.
+The Moving-Average filter averages over a selected number of neighboring points.
 """
 
 # ╔═╡ 97a1f4c0-570e-4035-a028-ec76f61d316f
@@ -324,9 +485,28 @@ let
 	)
 end
 
+# ╔═╡ 33c872b9-a84c-4b90-b38e-9f1863e9cea2
+md"""
+## PIC Noise Reduction Techniques
+
+- Variance reduction, e.g. ``\delta f``
+- Filtering: physical/Fourier domain
+- High-order shape functions
+- Kernel density estimation
+
+### High-order shape functions
+
+FLEKS use a uniform box shape function. High-order (>2) shape functions can mitigate the noise effect.
+
+$(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/PIC_shape_functions.png",
+    MIME("PIC_shape"),
+    (:width => 600)
+))
+"""
+
 # ╔═╡ f7f6d21b-e830-49e3-8605-2da8ba082cb7
 md"""
-## Kernel Density Estimation
+## Kernel Density Estimation (KDE)
 
 Imagine you observe 6 particles at a location with velocities [9,12,10,55,62,50]. The question is: **what is the true distribution of particles?** Kernel Density Estimation (KDE) is a method specifically tackling this task.
 
@@ -350,11 +530,26 @@ The common choices are:
 - Triangle
 
 As the number of samples n increases, the shape of the kernel function matters less; instead, the width h is the key parameter to find.
+"""
+
+# ╔═╡ ef37fc47-5a75-47cf-8817-195cb0adc64c
+md"""
+### Kernel width optimization
+
+```math
+\hat{f}_h(x) = \frac{1}{nh} \sum_{i=1}^n K(\frac{x - x_i}{h})
+```
 
 Finding the optimal width is equivalent to the well-known *bias-variance trade-off problem* in statistics.
 
-- Larger h => smoother density estimation, larger **bias** error
-- Smaller h => spikier density estimation, larger **variance** error
+- Larger h =>
+  - lower and flatter shape function
+  - smoother density estimation
+  - larger **bias** error
+- Smaller h =>
+  - higher and narrower shape function
+  - spikier density estimation
+  - larger **variance** error
 """
 
 # ╔═╡ 481b9a8c-c0ff-4e50-b0b3-46065558071a
@@ -460,29 +655,6 @@ The CV function of kernel width h is calculated by
 where ``\bar{K}(x) = \int K(x-t)K(t)\mathrm{d}t`` is a convolution.
 
 The CV function is then used to estimate ``\hat{h}`` that minimize it.
-"""
-
-# ╔═╡ c8b068ef-0c62-4ea7-bbea-1c15defcbecf
-md"""
-
-## PIC Noise Reduction Techniques
-
-- High-order shape functions
-- Kernel width optimization
-- Adaptive width adjustment
-
-### High-order shape functions
-
-FLEKS use a uniform box shape function. High-order (>2) shape functions can mitigate the noise effect.
-
-### Kernel width optimization
-
-```math
-\hat{f}_h(x) = \frac{1}{nh} \sum_{i=1}^n K(\frac{x - x_i}{h})
-```
-
-- Larger width h => lower and flatter shape function
-- Smaller width h => higher and narrower shape function
 
 ### Adaptive width adjustment
 
@@ -518,13 +690,6 @@ Criterion:
 - Anderson-Darling test, to tell whether or not samples obey uniform distribution.
 """
 
-# ╔═╡ a111afa2-0039-4551-a26d-0f4f8e539de4
-Resource(
-	"https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/density_estimate_KDEvsPIC.png",
-	:alt => "KDE VS PIC in the Landau damping problem",
-	:width => 400
-)
-
 # ╔═╡ c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
 md"""
 $(Resource("https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/noise_reduction_shapefunction_kernelwidth.png"))
@@ -546,65 +711,13 @@ let
 	println(result)
 end
 
-# ╔═╡ 28814af7-1081-4a91-93c8-fca4387c372d
+# ╔═╡ 63c8a08c-85ec-4104-8160-c906a68c2421
 md"""
-## Noise in FLEKS
+However, there are some hidden details when performing this hypothesis test:
+
+- What exactly are we testing?
+- How to define a uniform distribution?
 """
-
-# ╔═╡ c44a92d5-593b-49b9-a2d1-99b64c40f8be
-begin
-	filedir = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/data/"
-	filename = "EM_1Dfreestream_30deg_dx12km_3snapshots.jld2"
-	data = load(joinpath(filedir, filename))
-end
-
-# ╔═╡ b2feb585-fb09-4970-813f-f61781987bb3
-let
-	x = data["x"]
-	by = data["By"]
-	rhos0 = data["rhos0"]
-	rhos1 = data["rhos1"]
-	uxs0 = data["uxs0"]
-
-	p1 = @views plot(
-		scatter(;x, y=by[:,1], mode="lines", name="step 1"),
-    	Layout(yaxis_title="By")
-	)
-
-	p2 = @views plot(
-    	scatter(;x, y=rhos0[:,1], mode="lines", name="step 1"),
-    	Layout(yaxis_title="rhos0")
-	)
-
-	p3 = @views plot(
-    	scatter(;x, y=rhos1[:,1], mode="lines", name="step 1"),
-    	Layout(yaxis_title="rhos1")
-	)
-
-	p4 = @views plot(
-    	scatter(;x, y=uxs0[:,1], mode="lines", name="step 1"),
-    	Layout(yaxis_title="uxs0", xaxis_title="x")
-	)
-	
-	
-	p = [p1; p2; p3; p4]
-end
-
-# ╔═╡ 7faaab10-312b-44ba-85bd-7e847d268817
-let
-	x = data["x"]
-	rhos1 = @view data["rhos1"][:,1]
-	rhos1_smooth10 = neighbor_average(rhos1, 1; iterations=10)
-	rhos1_smooth50 = neighbor_average(rhos1, 1; iterations=50)
-
-	plot([
-		scatter(x=x[1:8:end], y=rhos1[1:8:end], name="raw", mode="markers", marker_size=1),
-    	scatter(x=x, y=rhos1_smooth10, mode="lines", name="niter = 10"),
-		scatter(x=x, y=rhos1_smooth50, mode="lines", name="niter = 50"),
-		],
-		Layout(yaxis_title="rhos1", xaxis_title="x [km]", title="Neighbor-Averaged Density")
-	)
-end
 
 # ╔═╡ 803d9973-2a67-4cb0-af4b-c69d7e4779e1
 let
@@ -1566,6 +1679,16 @@ version = "17.4.0+2"
 # ╟─2ad61290-ec52-11ee-1ed4-bf2c121bd57f
 # ╟─9341d824-70b2-4f2c-b706-33762fa3439f
 # ╠═d655634e-8ee5-48d5-93e3-07f6b0e85567
+# ╟─e0577a3a-13a7-49d8-bf64-19b26151227a
+# ╟─b118ac58-492d-46ab-86f2-9531ce37ec6a
+# ╠═6838c37b-d6e4-4157-b649-e7caafefb20e
+# ╠═3c68a93e-11e0-4378-be70-1c3f73830219
+# ╠═d6f93ba8-119d-454d-902f-731d7b8c04b8
+# ╠═41cbedc8-5509-47d0-a051-9ed228f854a2
+# ╟─ba5622a8-c9eb-4fe0-b63a-ed427ca90591
+# ╟─1f24f058-d0b6-4dd5-8691-510f53fa5023
+# ╟─56ee1010-da2e-4a3d-bb06-5b1a717e8306
+# ╟─8ddb85dd-b6af-4aec-a27a-b20555a4aa4f
 # ╟─23d012e7-3f1f-4205-892e-0a55c284a51f
 # ╠═729c180b-8f5b-49c5-b991-df081d05ccc7
 # ╠═7de4a2d8-e88d-4ed8-856c-7be58322aa6b
@@ -1583,18 +1706,15 @@ version = "17.4.0+2"
 # ╟─61e41c96-be12-450e-800a-81660bed8ce9
 # ╠═17dfe390-334e-4491-98fb-07ec499540cd
 # ╠═cc942948-1a4c-4525-9178-6f68867854e0
+# ╟─33c872b9-a84c-4b90-b38e-9f1863e9cea2
 # ╟─f7f6d21b-e830-49e3-8605-2da8ba082cb7
+# ╟─ef37fc47-5a75-47cf-8817-195cb0adc64c
 # ╠═481b9a8c-c0ff-4e50-b0b3-46065558071a
 # ╟─80da6802-0585-4fe8-9162-a6989bc48796
 # ╟─9ddb45a6-9318-4e33-8f69-f11e5ba9a158
-# ╟─c8b068ef-0c62-4ea7-bbea-1c15defcbecf
-# ╟─a111afa2-0039-4551-a26d-0f4f8e539de4
 # ╟─c94516da-72bb-42d6-b7fe-9fdaab1fc3c9
 # ╠═43411086-a7e7-4001-ab11-c6c965ac5318
-# ╟─28814af7-1081-4a91-93c8-fca4387c372d
-# ╠═c44a92d5-593b-49b9-a2d1-99b64c40f8be
-# ╠═b2feb585-fb09-4970-813f-f61781987bb3
-# ╠═7faaab10-312b-44ba-85bd-7e847d268817
+# ╟─63c8a08c-85ec-4104-8160-c906a68c2421
 # ╠═803d9973-2a67-4cb0-af4b-c69d7e4779e1
 # ╟─3099f6b6-dc46-46b6-b7a5-63907dfa32a4
 # ╟─b37b081e-85a4-4b69-b544-de0adeb65e16
