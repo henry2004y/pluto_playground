@@ -652,6 +652,15 @@ let
 	Resource(url, :width => 600, :autoplay => "", :loop => "")
 end
 
+# ╔═╡ 820717f8-373e-4836-a53a-839d63af10f4
+html"""
+<p>Ion distributions in the upstream of a 30 degree shock from FLEKS, dx=100 km</p>
+
+<img src="https://raw.githubusercontent.com/henry2004y/pluto_playground/master/figures/ion_distribution_upstream_30deg_shock.png"
+	width="650"
+	alt="Ion Distributions">
+"""
+
 # ╔═╡ 8172def2-78cf-41d4-b12f-a622f4fb49c0
 md"""
 ## Comparison With Hybrid-Vlasov Model
@@ -679,7 +688,7 @@ HybridVPIC 1D simulation (ongoing...)
 md"""
 ## Comparison With Explicit Full PIC Model
 
-Ongoing...
+OSIRIS 1D simulation (ongoing...)
 """
 
 # ╔═╡ f7f6d21b-e830-49e3-8605-2da8ba082cb7
@@ -1905,6 +1914,7 @@ version = "17.4.0+2"
 # ╟─e693e1f8-958d-4f97-b99c-448273cef62a
 # ╟─332d95ae-5be0-4ce8-8649-b712388bd8b5
 # ╟─ddae610c-0081-48f7-a8ab-4d3c60984248
+# ╟─820717f8-373e-4836-a53a-839d63af10f4
 # ╟─8172def2-78cf-41d4-b12f-a622f4fb49c0
 # ╟─617a627d-09b2-4742-83bd-f60f549b99c3
 # ╟─a5459cf5-e848-42d3-be15-ce42b054e83f
