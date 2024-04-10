@@ -665,15 +665,14 @@ html"""
 md"""
 ## Comparison With Hybrid-Vlasov Model
 
-Vlasiator 1D simulation with dx = 47 km, dv = 30km/s:
+Vlasiator 1D simulation with dx = 100 km, dv = 30km/s:
 
-- Vlasiator has weird boundary issues.
 - Vlasiator shows higher frequency downstream waves.
 """
 
 # ╔═╡ 617a627d-09b2-4742-83bd-f60f549b99c3
 let
-	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/vlasiator_30deg_shock_dx47km_500s.mp4"
+	url = "https://raw.githubusercontent.com/henry2004y/pluto_playground/master/videos/vlasiator_30deg_shock_dx100km_300s.mp4"
 	Resource(url, :width => 600, :autoplay => "", :loop => "")
 end
 
